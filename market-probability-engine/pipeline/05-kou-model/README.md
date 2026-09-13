@@ -16,7 +16,7 @@ where:
 $$
 f_Y(y) = p \cdot \eta_1 e^{-\eta_1 y} \mathbf{1}_{\{y \ge 0\}} + (1-p) \cdot \eta_2 e^{\eta_2 y} \mathbf{1}_{\{y < 0\}}
 $$
-with parameters $\eta_1 > 1$ (upward jump decay, ensures finite expected price) and $\eta_2 > 0$ (downward jump decay).
+with parameters $\eta_1 > 1$ and $\eta_2 > 0$.
 
 The expected percentage jump size $\xi = \mathbb{E}[e^Y - 1]$ is:
 $$
@@ -30,21 +30,27 @@ $$
 P(S_T \ge K) = P\left(\ln \frac{S_T}{S_0} \ge \ln \frac{K}{S_0}\right)
 $$
 
-The trajectory over remaining horizon $\Delta t = T - t$ combines:
-1. **Continuous Drift & Diffusion**: $(\mu - \frac{1}{2}\sigma^2)\Delta t + \sigma \sqrt{\Delta t} Z$, where $Z \sim \mathcal{N}(0, 1)$.
-2. **Compound Poisson Jumps**: $\sum_{i=1}^{N(\lambda \Delta t)} Y_i$.
+The simulated terminal distribution combines:
+1. **Continuous Drift & Diffusion**
+2. **Compound Poisson Jumps** drawn from the asymmetric double-exponential jump distribution.
 
-A vectorized Monte Carlo simulation produces empirical terminal probabilities across $N_{\text{paths}}$ simulated trajectories, alongside the analytic Black-Scholes benchmark $\Phi(d_2)$ under pure diffusion.
+A vectorized Monte Carlo simulation then estimates the fraction of terminal paths satisfying $S_T \ge K$. A pure-diffusion terminal-probability calculation is included as a benchmark.
 
 ## Components
 
 - **`kou_model.py`**:
-  - `KouParams`: Calibrated parameter tuple ($\sigma, \lambda, p_{\text{up}}, \eta_1, \eta_2, \mu, \xi$).
-  - `KouCalibrator`: Calibrates jump-diffusion parameters from discrete return series.
-  - `KouMonteCarloEngine`: High-performance vectorized path simulation engine.
-  - `black_scholes_terminal_prob()`: Closed-form benchmark probability under geometric Brownian motion.
+  - `KouParams`: parameter container for the jump-diffusion process.
+  - `KouCalibrator`: calibrates reference parameters from discrete return series.
+  - `KouMonteCarloEngine`: vectorized terminal-distribution simulation.
+  - `black_scholes_terminal_prob()`: pure-diffusion benchmark probability.
+
+## Reference Calibration
+
+The numerical defaults visible in the public implementation — including sampling interval, path count, thresholding defaults, and regularization/fallback values — are **reference settings for the open research implementation**.
+
+They are not intended to document the current live production configuration. The private calibration can differ as additional testing and model development continue.
 
 ## Public vs. Private Boundaries
 
-- **Public**: Core stochastic calculus formulas, calibration pipeline, and Monte Carlo terminal probability pricing.
-- **Private**: Real-time microsecond pricing loops, low-level AVX-512 / CUDA acceleration kernels, and live trade signal generation.
+- **Public**: Core model formulation, baseline calibration approach, Monte Carlo probability calculation, and reproducible reference settings.
+- **Private**: Current production calibration, model refinements, signal integration, decision filters, risk controls, and live execution stack.
