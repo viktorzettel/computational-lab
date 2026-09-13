@@ -1,6 +1,6 @@
 # System Architecture
 
-The **Market Probability Engine** is organized as a modular, feed-forward computational pipeline designed to calculate high-frequency terminal probabilities for short-horizon binary prediction contracts.
+The **Market Probability Engine** is organized as a modular, feed-forward computational pipeline for estimating terminal probabilities in short-horizon binary prediction contracts.
 
 ![Market Probability Engine Architecture](system-architecture.svg)
 
@@ -30,19 +30,23 @@ Execution               (Private)
 
 ### Public Research & Mathematical Modeling Layer
 
-1. **`01-market-discovery`**: Ingests market metadata, parses recurrence patterns (e.g. 5-minute recurring cycles), verifies liquidity prerequisites, and maps outcome tokens (`UP` / `DOWN`, `YES` / `NO`).
-2. **`02-strike-capture`**: Normalizes contract boundaries, identifying authoritative strike values ($K$, *priceToBeat*), contract expiries ($T$), and post-expiration settlement truth ($S_T$).
-3. **`03-market-data`**: Groups irregular tick trades into synchronous fixed-interval buckets (e.g., 10-second candles), forward-filling synthetic bars across liquidity droughts to produce clean continuous log return series.
-4. **`04-volatility-jumps`**: Disentangles the continuous diffusion variance $\sigma_{\text{diff}}^2$ from discontinuous jump innovations using Barndorff-Nielsen & Shephard Bipower Variation, Parkinson range volatility, and Core-70 jump thresholding. Fits asymmetric exponential arrival rates ($\lambda, p_{\text{up}}, \eta_1, \eta_2$).
-5. **`05-kou-model`**: Evaluates the terminal state distribution $P(S_T \ge K)$ using the double-exponential jump diffusion process via vectorized Monte Carlo path simulation alongside analytic Black-Scholes diffusion baselines.
-6. **`06-order-book-signals`**: Extracts high-frequency Limit Order Book (LOB) microstructure indicators including top-of-book bid/ask spreads in basis points, top-$N$ order book imbalance ($OBI_N$), and volume-weighted microprices (Stoikov, 2018).
+1. **`01-market-discovery`**: Ingests market metadata, parses recurrence patterns, identifies underlying assets, and maps outcome tokens.
+2. **`02-strike-capture`**: Normalizes contract boundaries, strike values ($K$), contract expiries ($T$), and post-expiration settlement truth.
+3. **`03-market-data`**: Groups irregular tick trades into synchronous fixed-interval buckets and produces continuous log-return series for downstream analysis.
+4. **`04-volatility-jumps`**: Estimates the continuous volatility component and identifies discontinuous return innovations using robust high-frequency estimators and thresholding methods.
+5. **`05-kou-model`**: Evaluates terminal probabilities $P(S_T \ge K)$ using the double-exponential jump-diffusion process via vectorized Monte Carlo simulation alongside a diffusion benchmark.
+6. **`06-order-book-signals`**: Extracts L2 market-microstructure indicators including bid/ask spread, top-$N$ depth, imbalance, and microprice.
+
+The parameter choices shown in the public implementation are reference research settings rather than a statement of the current production calibration.
 
 ---
 
-### Private Execution Layer (Proprietary)
+### Private Production Layer
 
-Stages 7 through 9 govern live capital allocation, private API signing, and transaction routing. These stages are intentionally retained in private repositories:
+The later stages are documented only at a high level and remain in the private production codebase:
 
-7. **`07-decision-risk`**: Evaluates model dislocation thresholds, bankroll risk limits, drawdown tripwires, and fractional Kelly bet sizing.
-8. **Market Comparison**: Compares structural model probability $P_{\text{model}}$ against active exchange order-book quotes $P_{\text{market}}$ to isolate net expected value after fees.
-9. **`08-execution`**: Production order router, asynchronous fill tracking, EIP-712 cryptographic order signing, and private cancellation managers.
+7. **`07-decision-risk`**: Combines model outputs with validation, current calibration, risk constraints, and position-sizing logic.
+8. **Market Comparison**: Compares model probabilities with tradable market prices and transaction costs.
+9. **`08-execution`**: Handles live order submission, signing, fill tracking, cancellations, retries, and operational safeguards.
+
+Current production thresholds, signal combinations, execution code, credentials, and infrastructure details are intentionally not published.
