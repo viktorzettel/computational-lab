@@ -1,38 +1,25 @@
 # Computational Lab
 
-A curated collection of quantitative research, market-modeling experiments, and scientific visualizations by **Viktor Zettel**.
+Selected computational research by Viktor Zettel, at the intersection of financial markets and scientific visualization. Each project separates its question, data, implementation, and limits. This repository contains reference research code and documentation; it is not the deployment repository for a trading system.
 
-This repository is intentionally selective. It contains public research notes, reproducible analysis, visualizations, and non-sensitive project code. Production trading logic, live credentials, execution infrastructure, and proprietary decision filters are **not** published here.
+| Project | Question | Public material |
+| --- | --- | --- |
+| [Market Probability Engine](market-probability-engine/) | How can short-horizon terminal-event probabilities be estimated and evaluated? | Contract and data parsing, volatility and jump estimators, Kou simulation, diffusion benchmark, order-book features, methodology |
+| [Gaia Nearby Stars](gaia-nearby-stars/) | What does the nearby stellar volume look like in Sun-centred coordinates? | Gaia DR3 catalogue preparation, methodology, interactive Three.js viewer |
+| [Portfolio Optimization Lab](portfolio-optimization/) | How do alternative allocation and risk methods behave? | Selected portfolio experiments |
+| [Real Scale Solar System](real-scale-solar-system/) | How can astronomical distances be shown at their true scale? | Visualization experiments |
 
-## Projects
+## How to read the market research
 
-### Market Probability Engine
-Research around short-horizon crypto market probabilities using jump-diffusion models, volatility and jump estimation, market microstructure, and prediction-market data.
+Start with the [Market Probability Engine research overview](market-probability-engine/README.md). The [architecture](market-probability-engine/architecture/) maps the public modules and distinguishes the price model from independent order-book features. The [Kou reference module](market-probability-engine/pipeline/05-kou-model/) specifies the drift convention and has a small regression test. An [illustrative historical study](market-probability-engine/studies/btc-hourly-return-study.md) reports its data, forecast target, baselines and limitations.
 
-**Public:** architecture, methodology, selected analysis, figures, and reproducible research components.  
-**Private:** live execution system, production Kou engine, decision filters, credentials, and operational infrastructure.
+The public code does not establish profitable trading performance. A probability score for subsequent BTC returns is not a score for officially resolved prediction-market contracts. Official contract strike, final price, resolved side, and realized fills are distinct records.
 
-### Gaia Nearby Stars
-A Sun-centered 3D map of Gaia DR3 sources within roughly 100 light-years, including catalogue construction, approximate stellar classification, and interactive visualization.
+## Reproducibility and boundaries
 
-### Real Scale Solar System
-Interactive scientific visualization experiments focused on astronomical scale and spatial intuition.
+- The public modules contain explicit **reference** defaults. They do not identify current production settings.
+- The included test runs with Python and NumPy: `python3 -m unittest discover -s market-probability-engine/tests -v`.
+- Raw operational data, credentials, private decision rules, live sizing, and order submission are outside this repository.
+- The Gaia repository directory documents the published viewer. A newer local visualization is used on the portfolio website and has not been mirrored into this public repository.
 
-### Portfolio Optimization Lab
-Experiments with portfolio allocation and risk methods including hierarchical approaches such as HRP and NCO.
-
----
-
-## Repository principles
-
-- Research and methodology should be understandable without access to the private production system.
-- No secrets, credentials, wallet keys, or live execution configuration belong here.
-- Large raw datasets and generated build artifacts are kept out of Git whenever practical.
-- Project READMEs should explain the question, method, data, limitations, and outputs.
-
-## About
-
-Economics, financial markets, computational research, and scientific visualization.
-
-Website: coming soon  
-GitHub: https://github.com/viktorzettel
+**Author:** Viktor Zettel · Economics, markets, computation
