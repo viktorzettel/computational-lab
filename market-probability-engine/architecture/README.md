@@ -1,52 +1,17 @@
-# System Architecture
+# Research architecture
 
-The **Market Probability Engine** is organized as a modular, feed-forward computational pipeline for estimating terminal probabilities in short-horizon binary prediction contracts.
+![Public research architecture](system-architecture.svg)
 
-![Market Probability Engine Architecture](system-architecture.svg)
+The public project has two inputs after contract identification: a sampled underlying-price series and contemporaneous Level-2 order-book snapshots. Volatility and jump estimates parameterize a terminal-price model; order-book calculations produce a separate descriptive feature set. Combining those outputs into a decision and executing an order belong to a private system and are not specified here.
 
-## Pipeline Flow
+The contract record supplies the official strike and expiry. The official final price and resolved side become available only after settlement and belong to evaluation, never to the pre-expiry forecast input. Captured spot proxies and actual exchange fills are separate from official truth.
 
-```text
-Market Discovery
-      ↓
-Strike & Contract Capture
-      ↓
-Market Data Ingestion
-      ↓
-Volatility & Jump Estimation
-      ↓
-Kou Probability Engine
-      ↓
-Order-Book Signals
-      ↓
-Decision & Risk Filters  (Private)
-      ↓
-Market Comparison       (Private)
-      ↓
-Execution               (Private)
-```
+| Public stage | Role |
+| --- | --- |
+| 01–02 | Identify contracts, map outcome tokens and retain authoritative strike/expiry/resolution fields. |
+| 03 | Form fixed-grid candles and log returns; mark synthetic intervals. |
+| 04 | Estimate continuous variation and candidate jumps from past returns. |
+| 05 | Estimate $P(S_T\ge K)$ by Kou Monte Carlo and compare with diffusion. |
+| 06 | Summarize bid/ask spread, depth, imbalance and microprice from Level-2 snapshots. |
 
-## Stage Descriptions
-
-### Public Research & Mathematical Modeling Layer
-
-1. **`01-market-discovery`**: Ingests market metadata, parses recurrence patterns, identifies underlying assets, and maps outcome tokens.
-2. **`02-strike-capture`**: Normalizes contract boundaries, strike values ($K$), contract expiries ($T$), and post-expiration settlement truth.
-3. **`03-market-data`**: Groups irregular tick trades into synchronous fixed-interval buckets and produces continuous log-return series for downstream analysis.
-4. **`04-volatility-jumps`**: Estimates the continuous volatility component and identifies discontinuous return innovations using robust high-frequency estimators and thresholding methods.
-5. **`05-kou-model`**: Evaluates terminal probabilities $P(S_T \ge K)$ using the double-exponential jump-diffusion process via vectorized Monte Carlo simulation alongside a diffusion benchmark.
-6. **`06-order-book-signals`**: Extracts L2 market-microstructure indicators including bid/ask spread, top-$N$ depth, imbalance, and microprice.
-
-The parameter choices shown in the public implementation are reference research settings rather than a statement of the current production calibration.
-
----
-
-### Private Production Layer
-
-The later stages are documented only at a high level and remain in the private production codebase:
-
-7. **`07-decision-risk`**: Combines model outputs with validation, current calibration, risk constraints, and position-sizing logic.
-8. **Market Comparison**: Compares model probabilities with tradable market prices and transaction costs.
-9. **`08-execution`**: Handles live order submission, signing, fill tracking, cancellations, retries, and operational safeguards.
-
-Current production thresholds, signal combinations, execution code, credentials, and infrastructure details are intentionally not published.
+The public modules are reference implementations, not evidence of a particular live deployment. Current thresholds, signal integration, risk controls, pricing comparison and order submission are not represented by the public code.

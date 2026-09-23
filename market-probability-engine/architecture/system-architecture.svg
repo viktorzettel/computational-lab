@@ -1,160 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" width="100%" height="100%">
-  <defs>
-    <style>
-      .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-weight: 700; font-size: 22px; fill: #0f172a; }
-      .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13px; fill: #64748b; }
-      .section-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
-      .box-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-weight: 600; font-size: 14px; fill: #0f172a; }
-      .box-desc { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #475569; }
-      .badge { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-weight: 700; font-size: 10px; }
-      .arrow { stroke: #94a3b8; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
-      .arrow-dashed { stroke: #cbd5e1; stroke-width: 2; stroke-dasharray: 4 4; fill: none; marker-end: url(#arrowhead-gray); }
-    </style>
-    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#64748b" />
-    </marker>
-    <marker id="arrowhead-gray" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#94a3b8" />
-    </marker>
-    <filter id="card-shadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.06"/>
-    </filter>
-  </defs>
-
-  <!-- Background Canvas -->
-  <rect width="100%" height="100%" fill="#f8fafc" />
-
-  <!-- Header -->
-  <text x="40" y="48" class="title">Market Probability Engine Architecture</text>
-  <text x="40" y="72" class="subtitle">Short-Horizon Probability Forecasting &amp; Jump-Diffusion Microstructure Pipeline</text>
-
-  <!-- Group Background: Public Research Pipeline (01 - 06) -->
-  <rect x="30" y="100" width="810" height="540" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
-  <rect x="45" y="112" width="180" height="24" rx="4" fill="#eff6ff" />
-  <text x="55" y="128" class="section-label" fill="#2563eb">Public Research Layer (01–06)</text>
-
-  <!-- Group Background: Private Execution Layer (07 - 08 + Comparison) -->
-  <rect x="860" y="100" width="310" height="540" rx="12" fill="#fdfefe" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 4" />
-  <rect x="875" y="112" width="190" height="24" rx="4" fill="#f1f5f9" />
-  <text x="885" y="128" class="section-label" fill="#475569">Private Execution Layer (07–08)</text>
-
-  <!-- 01: Market Discovery -->
-  <g transform="translate(60, 160)" filter="url(#card-shadow)">
-    <rect width="210" height="90" rx="8" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5" />
-    <circle cx="24" cy="26" r="12" fill="#dbeafe" />
-    <text x="20" y="30" class="badge" fill="#1d4ed8">01</text>
-    <text x="46" y="30" class="box-title">Market Discovery</text>
-    <text x="16" y="54" class="box-desc">• Metadata scanning &amp; recurrence</text>
-    <text x="16" y="70" class="box-desc">• 5m/15m cycle candidate filtering</text>
-  </g>
-
-  <!-- 02: Strike Capture -->
-  <g transform="translate(330, 160)" filter="url(#card-shadow)">
-    <rect width="210" height="90" rx="8" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5" />
-    <circle cx="24" cy="26" r="12" fill="#dbeafe" />
-    <text x="20" y="30" class="badge" fill="#1d4ed8">02</text>
-    <text x="46" y="30" class="box-title">Strike Capture</text>
-    <text x="16" y="54" class="box-desc">• Authoritative priceToBeat (K)</text>
-    <text x="16" y="70" class="box-desc">• Expiration T &amp; settlement ground truth</text>
-  </g>
-
-  <!-- 03: Market Data -->
-  <g transform="translate(600, 160)" filter="url(#card-shadow)">
-    <rect width="210" height="90" rx="8" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5" />
-    <circle cx="24" cy="26" r="12" fill="#dbeafe" />
-    <text x="20" y="30" class="badge" fill="#1d4ed8">03</text>
-    <text x="46" y="30" class="box-title">Market Data Ingestion</text>
-    <text x="16" y="54" class="box-desc">• 10s fixed-grid candle aggregation</text>
-    <text x="16" y="70" class="box-desc">• Synthetic gap-fill &amp; log returns</text>
-  </g>
-
-  <!-- 04: Volatility & Jumps -->
-  <g transform="translate(60, 310)" filter="url(#card-shadow)">
-    <rect width="210" height="95" rx="8" fill="#ffffff" stroke="#0ea5e9" stroke-width="1.5" />
-    <circle cx="24" cy="26" r="12" fill="#e0f2fe" />
-    <text x="20" y="30" class="badge" fill="#0369a1">04</text>
-    <text x="46" y="30" class="box-title">Volatility &amp; Jumps</text>
-    <text x="16" y="54" class="box-desc">• Bipower variation &amp; Parkinson</text>
-    <text x="16" y="70" class="box-desc">• Core-70 jump detection</text>
-    <text x="16" y="86" class="box-desc">• Jump intensity λ, p_up, η₁, η₂</text>
-  </g>
-
-  <!-- 05: Kou Model -->
-  <g transform="translate(330, 310)" filter="url(#card-shadow)">
-    <rect width="210" height="95" rx="8" fill="#ffffff" stroke="#0ea5e9" stroke-width="1.5" />
-    <circle cx="24" cy="26" r="12" fill="#e0f2fe" />
-    <text x="20" y="30" class="badge" fill="#0369a1">05</text>
-    <text x="46" y="30" class="box-title">Kou Model Engine</text>
-    <text x="16" y="54" class="box-desc">• Double-exponential jump-diffusion</text>
-    <text x="16" y="70" class="box-desc">• Vectorized Monte Carlo P(S_T ≥ K)</text>
-    <text x="16" y="86" class="box-desc">• Analytical Black-Scholes benchmark</text>
-  </g>
-
-  <!-- 06: Order-Book Signals -->
-  <g transform="translate(600, 310)" filter="url(#card-shadow)">
-    <rect width="210" height="95" rx="8" fill="#ffffff" stroke="#0ea5e9" stroke-width="1.5" />
-    <circle cx="24" cy="26" r="12" fill="#e0f2fe" />
-    <text x="20" y="30" class="badge" fill="#0369a1">06</text>
-    <text x="46" y="30" class="box-title">Order-Book Signals</text>
-    <text x="16" y="54" class="box-desc">• L2 bid/ask spread (bps)</text>
-    <text x="16" y="70" class="box-desc">• Top-5 depth &amp; imbalance (OBI₅)</text>
-    <text x="16" y="86" class="box-desc">• Volume-weighted microprice</text>
-  </g>
-
-  <!-- Synthesis / Multi-Modal Fusion (Research Stage Output) -->
-  <g transform="translate(200, 470)" filter="url(#card-shadow)">
-    <rect width="470" height="60" rx="8" fill="#f8fafc" stroke="#64748b" stroke-width="1.5" />
-    <text x="20" y="26" class="box-title" fill="#334155">Research State: Probability &amp; Microstructure Feature Vector</text>
-    <text x="20" y="46" class="box-desc" fill="#64748b">[ Kou_P(Yes), BS_P(Yes), RV, BV_Diff, OBI₅, Spread_bps, Microprice, TimeToExpiry ]</text>
-  </g>
-
-  <!-- 07: Decision & Risk Filters (Private) -->
-  <g transform="translate(890, 180)" filter="url(#card-shadow)">
-    <rect width="250" height="90" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" />
-    <circle cx="24" cy="26" r="12" fill="#f1f5f9" />
-    <text x="20" y="30" class="badge" fill="#475569">07</text>
-    <text x="46" y="30" class="box-title">Decision &amp; Risk Filters</text>
-    <text x="16" y="54" class="box-desc">• Kelly sizing &amp; bankroll protection</text>
-    <text x="16" y="70" class="box-desc">• Dislocation &amp; confidence gates</text>
-  </g>
-
-  <!-- Stage: Market Comparison (Private) -->
-  <g transform="translate(890, 315)" filter="url(#card-shadow)">
-    <rect width="250" height="90" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" />
-    <circle cx="24" cy="26" r="12" fill="#f1f5f9" />
-    <text x="18" y="30" class="badge" fill="#475569">MC</text>
-    <text x="46" y="30" class="box-title">Market Comparison</text>
-    <text x="16" y="54" class="box-desc">• Model probability vs. CLOB price</text>
-    <text x="16" y="70" class="box-desc">• Expected value &amp; edge calculation</text>
-  </g>
-
-  <!-- 08: Execution (Private) -->
-  <g transform="translate(890, 450)" filter="url(#card-shadow)">
-    <rect width="250" height="85" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" />
-    <circle cx="24" cy="26" r="12" fill="#f1f5f9" />
-    <text x="20" y="30" class="badge" fill="#475569">08</text>
-    <text x="46" y="30" class="box-title">Execution Engine</text>
-    <text x="16" y="52" class="box-desc">• Private key signing &amp; CLOB router</text>
-    <text x="16" y="68" class="box-desc">• Order lifecycle &amp; fill tracking</text>
-  </g>
-
-  <!-- Connecting Arrows -->
-  <!-- 01 -> 02 -->
-  <line x1="270" y1="205" x2="322" y2="205" class="arrow" />
-  <!-- 02 -> 03 -->
-  <line x1="540" y1="205" x2="592" y2="205" class="arrow" />
-  <!-- 03 -> 04 (Down and back left) -->
-  <path d="M 705 250 L 705 280 L 165 280 L 165 302" class="arrow" />
-  <!-- 04 -> 05 -->
-  <line x1="270" y1="357" x2="322" y2="357" class="arrow" />
-  <!-- 05 -> 06 -->
-  <line x1="540" y1="357" x2="592" y2="357" class="arrow" />
-  <!-- 05 & 06 -> Feature Vector Box -->
-  <path d="M 435 405 L 435 462" class="arrow" />
-  <!-- Feature Vector Box -> Decision & Risk -->
-  <path d="M 670 500 L 780 500 L 780 225 L 882 225" class="arrow" />
-  <!-- 07 Decision -> Market Comparison -->
-  <line x1="1015" y1="270" x2="1015" y2="307" class="arrow" />
-  <!-- Market Comparison -> Execution -->
-  <line x1="1015" y1="405" x2="1015" y2="442" class="arrow" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 610" role="img" aria-labelledby="title desc">
+<title id="title">Market Probability Engine public research architecture</title>
+<desc id="desc">Contract identity and official strike feed a price-model branch; market prices provide returns for volatility, jump and Kou estimation. Level-2 snapshots form a separate descriptive feature branch. Outcomes join only in subsequent evaluation. Private decision and execution are outside the diagram.</desc>
+<defs>
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#1d2938}.title{font-size:25px;font-weight:700}.sub{font-size:13px;fill:#617083}.step{font-size:13px;font-weight:700;fill:#37627b}.head{font-size:17px;font-weight:600}.note{font-size:12px;fill:#607082}.line{stroke:#7893a6;stroke-width:1.5;fill:none;marker-end:url(#arrow)}.dash{stroke-dasharray:5 5}
+</style>
+<marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#7893a6"/></marker>
+</defs>
+<rect width="1200" height="610" fill="#f6f8f9"/>
+<text class="title" x="42" y="48">From observations to evaluated probabilities</text>
+<text class="sub" x="42" y="73">Public reference components · current production calibration and execution are outside scope</text>
+<g fill="#fff" stroke="#cbd6dd" stroke-width="1.4">
+<rect x="42" y="116" width="270" height="95" rx="5"/><rect x="345" y="116" width="270" height="95" rx="5"/><rect x="648" y="116" width="270" height="95" rx="5"/>
+<rect x="345" y="267" width="270" height="95" rx="5"/><rect x="648" y="267" width="270" height="95" rx="5"/>
+<rect x="42" y="415" width="270" height="95" rx="5"/><rect x="648" y="415" width="270" height="95" rx="5"/>
+</g>
+<text class="step" x="58" y="143">01–02 / CONTRACT</text><text class="head" x="58" y="171">Identity, strike, expiry</text><text class="note" x="58" y="192">Official fields retained separately</text>
+<text class="step" x="361" y="143">03 / PRICE SERIES</text><text class="head" x="361" y="171">Fixed-grid log returns</text><text class="note" x="361" y="192">Synthetic intervals marked</text>
+<text class="step" x="664" y="143">04 / ESTIMATION</text><text class="head" x="664" y="171">Volatility and jumps</text><text class="note" x="664" y="192">Past observations only</text>
+<text class="step" x="361" y="294">06 / ORDER BOOK</text><text class="head" x="361" y="322">L2 feature summaries</text><text class="note" x="361" y="343">Independent descriptive branch</text>
+<text class="step" x="664" y="294">05 / MODEL</text><text class="head" x="664" y="322">Kou and diffusion</text><text class="note" x="664" y="343">Terminal event probabilities</text>
+<text class="step" x="58" y="442">AFTER EXPIRY</text><text class="head" x="58" y="470">Official resolution</text><text class="note" x="58" y="491">Never a forecast input</text>
+<text class="step" x="664" y="442">EVALUATION</text><text class="head" x="664" y="470">Calibration and scores</text><text class="note" x="664" y="491">Compare declared baselines</text>
+<path class="line" d="M312 163H344M615 163H647M783 211V266M783 362V414M312 462H647M480 211V266"/>
+<path class="line dash" d="M918 315H1095V466H919"/>
+<text class="note" x="940" y="294">Features may be analysed</text><text class="note" x="940" y="312">alongside probabilities;</text><text class="note" x="940" y="330">no public decision rule.</text>
+<text class="sub" x="42" y="563">The historical BTC return study has a different target from officially settled prediction-market contracts.</text>
 </svg>

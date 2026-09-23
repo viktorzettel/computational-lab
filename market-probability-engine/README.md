@@ -1,119 +1,60 @@
 # Market Probability Engine
 
-A research project exploring **short-horizon terminal probability modeling** in crypto prediction markets.
+## Research question
 
-The public repository focuses on the mathematical and computational research layer: double-exponential jump-diffusion modeling, realized and range-based volatility estimation, robust jump detection, order-book microstructure signals, and probability calibration benchmarks.
+This project studies the estimation of short-horizon binary-event probabilities. For a contract with official strike $K$ and expiry $T$, the model target is $P(S_T \ge K\mid\mathcal F_t)$. The question is whether a model with explicit jumps produces better probabilistic forecasts than a continuous-diffusion reference after the same information cutoff. Order-book variables provide separate observations of current liquidity; they do not enter the Kou price process by definition.
 
-The live production execution infrastructure and current decision logic are intentionally private.
+This repository publishes reference processing and modelling components. It does not publish an integrated live strategy or claim that either model has a trading edge.
 
----
+## Data and target definitions
 
-## Research Objective
+1. **Contract record:** market identifier, outcome-token mapping, start and expiry, official price-to-beat $K$, official final price and resolved side. A spot quote captured near the start is a proxy and must remain labelled as such.
+2. **Price observations:** irregular trades are placed on a fixed grid. Empty intervals can be forward-filled with synthetic flat candles; their proportion should be reported because it affects estimators.
+3. **Log returns:** $r_i=\log(S_i/S_{i-1})$, with a declared sampling interval and information cutoff.
+4. **Evaluation target:** an officially resolved contract outcome is distinct from a subsequent spot-return sign. The [BTC return study](studies/btc-hourly-return-study.md) uses the latter and makes no contract-settlement claim.
 
-How accurately can jump-diffusion stochastic processes and high-frequency order-book signals estimate terminal outcomes for short-horizon (e.g. 5-minute and 15-minute) prediction market contracts?
+## Public architecture
 
-High-frequency crypto returns often exhibit heavy tails, excess kurtosis, volatility clustering, and discontinuous price moves. Pure continuous-diffusion models may underrepresent jump-driven tail risk and short-horizon probability mass. This project investigates whether explicit jump-diffusion modeling (Kou, 2002), complemented by Limit Order Book (LOB) information, can improve probability calibration relative to simpler diffusion baselines.
+| Stage | Output | Public implementation |
+| --- | --- | --- |
+| [01 Market discovery](pipeline/01-market-discovery/) | Candidate contracts and token mapping | `market_parser.py` |
+| [02 Strike and resolution](pipeline/02-strike-capture/) | Official fields and resolution schema | `strike_parser.py` |
+| [03 Price series](pipeline/03-market-data/) | Fixed-grid candles and log returns | `candle_utils.py` |
+| [04 Volatility and jumps](pipeline/04-volatility-jumps/) | Continuous-scale and jump-parameter estimates | `volatility.py`, `jump_detection.py` |
+| [05 Terminal distribution](pipeline/05-kou-model/) | Kou Monte Carlo probability and diffusion reference | `kou_model.py` |
+| [06 Order-book features](pipeline/06-order-book-signals/) | Spread, depth, imbalance, microprice | `orderbook_features.py` |
 
----
+Stages 04 and 05 form the price-model branch. Stage 06 is a separate feature branch, fed by Level-2 snapshots. A private decision layer may combine outputs after validation; this repository does not specify its weights, rules, sizing or execution. The [architecture diagram](architecture/system-architecture.svg) shows that distinction.
 
-## Core Stochastic Model: Kou (2002) Jump-Diffusion
+## Statistical model
 
-The primary model is the **Kou double-exponential jump-diffusion process**, where the underlying asset price $S_t$ satisfies:
+For an observation interval, the reference simulator models terminal **log** return as
 
-$$\frac{dS_t}{S_t^-} = \mu \, dt + \sigma \, dW_t + d\left(\sum_{i=1}^{N_t} (V_i - 1)\right)$$
+$$
+X_H = mH + \sigma\sqrt{H}Z + \sum_{j=1}^{N_H}Y_j,
+\qquad N_H\sim\operatorname{Poisson}(\lambda H),\quad Z\sim N(0,1).
+$$
 
-where:
-* $W_t$ is a standard Brownian motion governing continuous diffusion with volatility $\sigma$.
-* $N_t$ is a homogeneous Poisson process with arrival rate $\lambda$.
-* $Y_i = \ln(V_i)$ are independent jump amplitudes with an **asymmetric double-exponential density**:
+Here $m$ is the mean diffusive **log return** per interval. Positive jumps occur with probability $p$ and exponential magnitude with rate $\eta_1$; negative jumps have probability $1-p$ and exponential magnitude with rate $\eta_2$. The simulated share of draws with $X_H\ge\log(K/S_t)$ estimates the terminal event probability. The public diffusion comparator sets the jump contribution to zero under the same log-drift convention. No second $\sigma^2/2$ subtraction is applied to a mean already estimated from log returns.
 
-$$f_Y(y) = p \cdot \eta_1 e^{-\eta_1 y} \mathbf{1}_{\{y \ge 0\}} + (1 - p) \cdot \eta_2 e^{\eta_2 y} \mathbf{1}_{\{y < 0\}}$$
+The threshold-based split between ordinary returns and candidate jumps is an operational estimator, not an identified physical decomposition. Parameter estimates can be unstable with few jumps, changing regimes or synthetic candles. Public numerical defaults are reference settings, not production calibration.
 
-with $\eta_1 > 1$ (upward jump decay) and $\eta_2 > 0$ (downward jump decay).
+## Evaluation design
 
-The expected percentage jump size is given by:
+At each forecast origin, fit parameters only to observations available by that origin. Record the forecast target, horizon, lookback, sampling grid, number of simulation draws and seed. Compare with a diffusion benchmark and an unconditional-frequency or constant-probability baseline. Report Brier score, reliability by probability bin, and the number of observations per bin; uncertainty intervals for temporally dependent events need appropriate interpretation.
 
-$$\xi = \mathbb{E}[e^Y - 1] = p \frac{\eta_1}{\eta_1 - 1} + (1 - p) \frac{\eta_2}{\eta_2 + 1} - 1$$
+A forecast study does not measure execution quality. Assessing a tradable strategy additionally requires contemporaneous market prices, fees, spread, fills, cancellations and risk constraints. The [hourly BTC return study](studies/btc-hourly-return-study.md) is an explicitly limited example: its fitted models did not beat a constant 0.5 forecast on Brier score.
 
----
+## Reproduce the public checks
 
-## Pipeline Architecture
+With Python and NumPy installed, run from the repository root:
 
-The engine is structured as a sequential, modular pipeline:
-
-```text
-Market Discovery
-      ↓
-Strike & Contract Capture
-      ↓
-Market Data Ingestion
-      ↓
-Volatility & Jump Estimation
-      ↓
-Kou Probability Engine
-      ↓
-Order-Book Signals
-      ↓
-Decision & Risk Filters  (Private)
-      ↓
-Market Comparison       (Private)
-      ↓
-Execution               (Private)
+```bash
+python3 -m unittest discover -s market-probability-engine/tests -v
 ```
 
-Detailed architecture diagram: [architecture/system-architecture.svg](architecture/system-architecture.svg).
+The tests check that the Kou simulator and analytic diffusion comparator use the same log-drift convention when jumps are disabled. They are a modelling regression check, not empirical validation.
 
----
+## Scope
 
-## Implemented Pipeline Modules
-
-| Stage | Module | Description |
-| :--- | :--- | :--- |
-| **01** | [`pipeline/01-market-discovery`](pipeline/01-market-discovery/) | Scans recurring prediction market contracts (5m/15m cycles), detects underlying assets (`BTC`, `ETH`, etc.), and extracts outcome tokens. |
-| **02** | [`pipeline/02-strike-capture`](pipeline/02-strike-capture/) | Captures official strike prices (*priceToBeat*), expiration timestamps, and normalizes authoritative settlement truth. |
-| **03** | [`pipeline/03-market-data`](pipeline/03-market-data/) | Aggregates irregular tick trades into synchronous fixed-interval candles (10s grid) with synthetic forward-fill gap handling. |
-| **04** | [`pipeline/04-volatility-jumps`](pipeline/04-volatility-jumps/) | Computes Parkinson range volatility, Barndorff-Nielsen & Shephard Bipower Variation, and robust jump estimates used to parameterize the jump-diffusion model. |
-| **05** | [`pipeline/05-kou-model`](pipeline/05-kou-model/) | Vectorized Monte Carlo terminal probability engine $P(S_T \ge K)$ under Kou jump-diffusion, plus analytic diffusion benchmark. |
-| **06** | [`pipeline/06-order-book-signals`](pipeline/06-order-book-signals/) | Computes L2 order-book spread, cumulative depth, imbalance, and microprice features. |
-| **07** | `pipeline/07-decision-risk` | *Private*: decision aggregation, risk controls, and production sizing logic. |
-| **08** | `pipeline/08-execution` | *Private*: live order submission, signing, lifecycle handling, and operational safeguards. |
-
----
-
-## Reference Calibration
-
-The numerical defaults and parameter choices visible in the public source are **reference / baseline research settings** used to make the open implementation self-contained and reproducible.
-
-They should not be interpreted as the current live production calibration. The private system continues to evolve as new tests, data, and model refinements are incorporated.
-
----
-
-## Evaluation Methodology
-
-Probability forecasts are evaluated out-of-sample against actual contract settlements ($y_i \in \{0, 1\}$) across short-horizon market cycles:
-
-* **Brier Score**:
-  $$\text{Brier} = \frac{1}{N} \sum_{i=1}^N (\hat{p}_i - y_i)^2$$
-* **Logarithmic Loss (Cross-Entropy)**:
-  $$\text{LogLoss} = -\frac{1}{N} \sum_{i=1}^N \left[ y_i \ln(\hat{p}_i) + (1 - y_i) \ln(1 - \hat{p}_i) \right]$$
-* **Reliability / Calibration Diagrams**: Empirical win rates plotted against model-predicted probability bins.
-* **Diffusion Baseline**: Comparative evaluation against a pure geometric-Brownian-motion terminal-probability benchmark.
-
----
-
-## Public vs. Private Boundaries
-
-### Public (Open Research)
-* Pipeline architecture and data contracts
-* Mathematical formulations for Kou jump-diffusion calibration and simulation
-* High-frequency volatility and jump-detection estimators
-* Order-book feature extraction routines
-* Backtest and probability-calibration methodology
-* Baseline research parameters sufficient to reproduce the public examples
-
-### Private (Production)
-* Current production calibration and decision thresholds
-* Signal combination and filtering logic
-* Capital allocation and risk controls
-* Live execution code
-* Infrastructure credentials, private keys, and operational endpoints
+Public: schemas, estimators, reference model, features and methods. Private: current calibration, model-selection and decision rules, capital allocation, trading infrastructure and credentials. [Stages 07–08](pipeline/) remain documentation-only.

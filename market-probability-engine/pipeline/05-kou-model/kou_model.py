@@ -37,7 +37,7 @@ class KouParams:
     p_up: float  # Probability of an upward jump (0 < p_up < 1)
     eta1: float  # Decay rate of upward jumps (eta1 > 1.0)
     eta2: float  # Decay rate of downward jumps (eta2 > 0.0)
-    mu_diffusive: float  # Drift of the continuous diffusion part
+    mu_diffusive: float  # Mean diffusive log return per observation interval (legacy field name)
     jump_count: int
     sample_count: int
     interval_seconds: float = 10.0
@@ -180,10 +180,12 @@ class KouMonteCarloEngine:
     ) -> float:
         """Estimate binary contract terminal probability P(S_T >= strike_price).
 
-        Simulates paths over the remaining duration:
-            ln(S_T / S_0) = (mu - 0.5 * sigma^2) * Delta_t
+        Simulates terminal log returns over the remaining duration:
+            ln(S_T / S_0) = mean_log_return * Delta_t
                           + sigma * sqrt(Delta_t) * Z
                           + sum_{i=1}^N Y_i
+        ``mu_diffusive`` is fitted from observed log returns. No additional
+        Ito correction is applied to that already-logarithmic drift.
         """
         if current_price <= 0.0 or strike_price <= 0.0:
             return 0.5
@@ -194,7 +196,7 @@ class KouMonteCarloEngine:
         horizon = time_to_expiry_s / max(params.interval_seconds, 1e-6)
         sigma2_t = params.sigma * params.sigma * horizon
         lam_t = params.lam * horizon
-        drift = params.mu_diffusive * horizon - 0.5 * sigma2_t
+        drift = params.mu_diffusive * horizon
         diffusion = math.sqrt(max(sigma2_t, 0.0))
 
         # Standard normal draws for continuous diffusion
@@ -236,12 +238,13 @@ def black_scholes_terminal_prob(
     strike_price: float,
     time_to_expiry_s: float,
     sigma_per_sqrt_second: float,
-    drift_per_second: float = 0.0,
+    mean_log_return_per_second: float = 0.0,
 ) -> float:
     """Analytical benchmark: terminal probability P(S_T >= K) under pure Brownian motion.
 
-    Calculates Phi(d2):
-        d2 = ( ln(S / K) + (mu - 0.5 * sigma^2) * T ) / (sigma * sqrt(T))
+    Calculates Phi(d) for a mean *log-return* drift:
+        d = (ln(S / K) + mean_log_return_per_second * T) / (sigma * sqrt(T))
+    This matches the drift convention used by the Kou simulation.
     """
     if current_price <= 0.0 or strike_price <= 0.0:
         return 0.5
@@ -254,6 +257,6 @@ def black_scholes_terminal_prob(
     if sigma_t <= EPS:
         return 1.0 if current_price >= strike_price else 0.0
 
-    drift_t = (drift_per_second - 0.5 * (sigma_per_sqrt_second**2)) * time_to_expiry_s
+    drift_t = mean_log_return_per_second * time_to_expiry_s
     d2 = (math.log(current_price / strike_price) + drift_t) / sigma_t
     return float(np.clip(normal_cdf(d2), 0.0, 1.0))

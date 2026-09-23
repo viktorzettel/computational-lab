@@ -1,56 +1,21 @@
-# 05 · Kou Jump-Diffusion Probability Engine
+# 05 · Kou reference model
 
-Implements the **Kou (2002)** double-exponential jump-diffusion stochastic model for computing terminal probabilities $P(S_T \ge K)$ in short-horizon prediction contracts.
+This module estimates a terminal event probability $P(S_T\ge K)$ from a double-exponential jump-diffusion distribution. It is a reference implementation for research; its defaults are not the current production calibration.
 
-## Mathematical Formulation
+## Parameter and drift convention
 
-Under the Kou model, the risk asset price $S_t$ satisfies the stochastic differential equation:
-$$
-\frac{dS_t}{S_t^-} = \mu \, dt + \sigma \, dW_t + d\left(\sum_{i=1}^{N_t} (V_i - 1)\right)
-$$
+`KouCalibrator` receives fixed-interval **log returns**. After a robust scale estimate, it computes the mean and standard deviation of a filtered return body. The legacy field `mu_diffusive` stores that **mean log return per observation interval**, not an arithmetic price drift. The simulator therefore uses
 
-where:
-- $W_t$ is standard Brownian motion capturing continuous diffusive price fluctuations ($\sigma > 0$).
-- $N_t$ is an independent Poisson process with constant jump arrival intensity $\lambda \ge 0$.
-- $Y_i = \ln(V_i)$ are independent and identically distributed asymmetric double-exponential random variables with probability density:
 $$
-f_Y(y) = p \cdot \eta_1 e^{-\eta_1 y} \mathbf{1}_{\{y \ge 0\}} + (1-p) \cdot \eta_2 e^{\eta_2 y} \mathbf{1}_{\{y < 0\}}
-$$
-with parameters $\eta_1 > 1$ and $\eta_2 > 0$.
-
-The expected percentage jump size $\xi = \mathbb{E}[e^Y - 1]$ is:
-$$
-\xi = p \frac{\eta_1}{\eta_1 - 1} + (1-p) \frac{\eta_2}{\eta_2 + 1} - 1
+\log(S_T/S_t)=mH+\sigma\sqrt{H}Z+\sum_{j=1}^{N_H}Y_j.
 $$
 
-### Terminal Probability Evaluation
+$H$ is the number of observation intervals remaining; $N_H\sim\mathrm{Poisson}(\lambda H)$. Positive jump amplitudes are exponential with rate $\eta_1$ and probability $p_{up}$; negative amplitudes have exponential magnitude with rate $\eta_2$. The event threshold is $\log(K/S_t)$. The empirical return mean already includes the log-price convention: subtracting $\sigma^2H/2$ again would bias the simulated distribution downward.
 
-For binary prediction contracts with strike $K$ expiring at $T$:
-$$
-P(S_T \ge K) = P\left(\ln \frac{S_T}{S_0} \ge \ln \frac{K}{S_0}\right)
-$$
+`black_scholes_terminal_prob` is named for legacy compatibility but computes the analytic **diffusion terminal-event probability**, not an option value. Its drift argument is `mean_log_return_per_second` and follows the same log-return convention.
 
-The simulated terminal distribution combines:
-1. **Continuous Drift & Diffusion**
-2. **Compound Poisson Jumps** drawn from the asymmetric double-exponential jump distribution.
+## Estimation and limits
 
-A vectorized Monte Carlo simulation then estimates the fraction of terminal paths satisfying $S_T \ge K$. A pure-diffusion terminal-probability calculation is included as a benchmark.
+The public calibrator uses a Core-70 seed scale, a second body estimate and threshold-based candidate jumps. It estimates jump frequency, sign frequency and exponential magnitude rates from those candidates. This is a model-fitting heuristic. Few jumps, synthetic flat candles, and nonstationary returns can make the parameters unstable. The simulation probability is conditional on the fitted parameters; it does not include parameter uncertainty.
 
-## Components
-
-- **`kou_model.py`**:
-  - `KouParams`: parameter container for the jump-diffusion process.
-  - `KouCalibrator`: calibrates reference parameters from discrete return series.
-  - `KouMonteCarloEngine`: vectorized terminal-distribution simulation.
-  - `black_scholes_terminal_prob()`: pure-diffusion benchmark probability.
-
-## Reference Calibration
-
-The numerical defaults visible in the public implementation — including sampling interval, path count, thresholding defaults, and regularization/fallback values — are **reference settings for the open research implementation**.
-
-They are not intended to document the current live production configuration. The private calibration can differ as additional testing and model development continue.
-
-## Public vs. Private Boundaries
-
-- **Public**: Core model formulation, baseline calibration approach, Monte Carlo probability calculation, and reproducible reference settings.
-- **Private**: Current production calibration, model refinements, signal integration, decision filters, risk controls, and live execution stack.
+Run the [regression checks](../../tests/test_log_drift.py) from the repository root with `python3 -m unittest discover -s market-probability-engine/tests -v`. The [research overview](../../README.md) defines the data and evaluation boundaries.
