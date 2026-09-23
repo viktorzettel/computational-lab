@@ -1,14 +1,16 @@
-# Portfolio Optimization Lab
+# RiskLens — Portfolio Optimization
 
-Experiments in modern portfolio construction and risk allocation.
+One of my first applied quantitative projects, RiskLens combines a React dashboard with a FastAPI analysis service. It fetches historical daily prices, estimates portfolio weights using HRP or NCO with a mean-variance fallback, and displays volatility, VaR/ES, correlations and a simple market-regime summary. These are exploratory outputs conditional on historical data and model choices, not validated live risk measures or investment advice.
 
-The project explores methods beyond classical mean-variance optimization, including **Hierarchical Risk Parity (HRP)** and **Nested Clustered Optimization (NCO)**.
+## Structure
 
-## Goals
+- `src/` contains the input form, allocation chart, correlation view and risk cards.
+- `backend/main.py` handles ticker validation, data retrieval, allocation and risk calculations.
+- The frontend calls `VITE_API_URL` if set and otherwise uses `http://127.0.0.1:8000`.
+- The backend uses `yfinance` and therefore needs network access to retrieve market data. It does not submit trades.
 
-- compare allocation methods under unstable covariance estimates
-- visualize portfolio concentration and risk contributions
-- explore clustering-based approaches to diversification
-- build an interactive interface for portfolio experiments
+## Run locally
 
-A cleaned public implementation and figures will be migrated here after the original prototype is reviewed.
+Install Node.js and Python. In `backend/`, install `requirements.txt`, then run `uvicorn main:app --reload --host 127.0.0.1 --port 8000`. From the project root, run `npm ci` and `npm run dev`. The default API CORS list permits the local Vite origins; set `RISKLENS_CORS_ORIGINS` to a comma-separated list for another frontend origin.
+
+The prototype does not include authentication, a historical point-in-time evaluation, or deployment infrastructure. Financial statistics should be checked against their sampling assumptions before interpretation.
