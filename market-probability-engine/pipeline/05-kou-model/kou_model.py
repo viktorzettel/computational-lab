@@ -250,13 +250,10 @@ def black_scholes_terminal_prob(
         return 0.5
     if time_to_expiry_s <= 0.0:
         return 1.0 if current_price >= strike_price else 0.0
-    if sigma_per_sqrt_second <= EPS:
-        return 1.0 if current_price >= strike_price else 0.0
-
+    drift_t = mean_log_return_per_second * time_to_expiry_s
     sigma_t = sigma_per_sqrt_second * math.sqrt(time_to_expiry_s)
     if sigma_t <= EPS:
-        return 1.0 if current_price >= strike_price else 0.0
+        return 1.0 if math.log(current_price / strike_price) + drift_t >= 0.0 else 0.0
 
-    drift_t = mean_log_return_per_second * time_to_expiry_s
     d2 = (math.log(current_price / strike_price) + drift_t) / sigma_t
     return float(np.clip(normal_cdf(d2), 0.0, 1.0))

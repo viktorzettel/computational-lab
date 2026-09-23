@@ -26,6 +26,10 @@ class LogDriftTests(unittest.TestCase):
         )
         self.assertAlmostEqual(simulated, analytic, delta=.004)
 
+    def test_deterministic_diffusion_uses_log_drift(self):
+        self.assertEqual(module.black_scholes_terminal_prob(100, 101, 60, 0, .001), 1.0)
+        self.assertEqual(module.black_scholes_terminal_prob(100, 101, 60, 0, -.001), 0.0)
+
     def test_calibrator_reports_log_return_mean(self):
         rng = np.random.default_rng(4)
         returns = rng.normal(.0006, .012, 5000)
