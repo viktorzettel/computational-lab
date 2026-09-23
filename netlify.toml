@@ -1,0 +1,7 @@
+[build]
+  base = "portfolio-optimization"
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  VITE_API_URL = "https://risklens-api-r8yc.onrender.com"
