@@ -1,0 +1,349 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #000;
+    font-family: Inter, system-ui, sans-serif;
+}
+#app {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.label-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Body / star labels */
+.label {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
+    white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    margin-top: -1.4em;
+    pointer-events: none;
+}
+.label-star {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 11px;
+}
+.label-system {
+    color: rgba(255, 235, 200, 0.9);
+    font-size: 13px;
+    font-weight: 600;
+}
+.label-region {
+    color: rgba(136, 170, 204, 0.75);
+    font-size: 12px;
+    font-style: italic;
+    letter-spacing: 0.08em;
+}
+
+/* Clickable star labels (distance measurement) */
+.label-clickable {
+    pointer-events: auto;
+    cursor: pointer;
+}
+.label-clickable:hover {
+    color: #5eead4;
+}
+.label-active {
+    color: #5eead4 !important;
+}
+.label-measure {
+    color: #5eead4;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(15, 18, 28, 0.8);
+    border: 1px solid rgba(94, 234, 212, 0.4);
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin-top: 0;
+}
+.label-galactic {
+    color: #ffd9a0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+/* HUD panel */
+.hud {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: #fff;
+    background: rgba(15, 18, 28, 0.72);
+    padding: 18px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    pointer-events: none;
+    max-width: 320px;
+    font-size: 13px;
+}
+.hud h2 {
+    margin: 0 0 10px 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+.hud-rows div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    line-height: 1.7;
+}
+.hud-rows span {
+    color: #9aa3b2;
+}
+.hud-rows b {
+    font-weight: 500;
+    color: #e8ecf2;
+    text-align: right;
+}
+.hud-rows b#hud-elapsed { color: #5eead4; }
+.hud-rows b#hud-sep { color: #fcd34d; }
+
+.hud-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+.hud-group > span:first-child {
+    color: #9aa3b2;
+    min-width: 42px;
+}
+.hud-buttons {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    pointer-events: auto;
+}
+.hud-buttons button {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #cdd5e0;
+    font-size: 11px;
+    padding: 4px 9px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+}
+.hud-buttons button:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+.hud-buttons button.active {
+    background: rgba(94, 234, 212, 0.2);
+    border-color: rgba(94, 234, 212, 0.5);
+    color: #5eead4;
+}
+
+.hud-tip {
+    margin-top: 12px;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 6px;
+    font-size: 12px;
+    color: #aab3c0;
+}
+
+/* Space travel panel (bottom left) */
+.travel-panel {
+    position: absolute;
+    left: 20px;
+    bottom: 20px;
+    color: #fff;
+    background: rgba(15, 18, 28, 0.78);
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(94, 234, 212, 0.25);
+    backdrop-filter: blur(10px);
+    min-width: 280px;
+    font-size: 13px;
+    pointer-events: none;
+}
+.travel-panel h3 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #5eead4;
+}
+.tp-rows div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    line-height: 1.7;
+}
+.tp-rows span {
+    color: #9aa3b2;
+}
+.tp-rows b {
+    font-weight: 500;
+    color: #e8ecf2;
+    font-variant-numeric: tabular-nums;
+}
+.tp-rows b#tp-phase { color: #fcd34d; }
+.tp-rows b#tp-speed { color: #5eead4; }
+.tp-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 6px;
+}
+.tp-actions button {
+    pointer-events: auto;
+    background: rgba(94, 234, 212, 0.15);
+    border: 1px solid rgba(94, 234, 212, 0.45);
+    color: #5eead4;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+}
+.tp-actions button:hover {
+    background: rgba(94, 234, 212, 0.28);
+}
+
+.tp-control-group {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.tp-control-label {
+    font-size: 11px;
+    color: #8b95a5;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.tp-btn-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    pointer-events: auto;
+}
+.tp-btn-row button {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #cbd5e1;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+}
+.tp-btn-row button:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+}
+.tp-btn-row button.active {
+    background: rgba(94, 234, 212, 0.22);
+    border-color: rgba(94, 234, 212, 0.6);
+    color: #5eead4;
+    font-weight: 500;
+}
+
+/* Mid-screen ignition countdown */
+.countdown-overlay {
+    position: absolute;
+    top: 38%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 44px;
+    font-weight: 700;
+    color: #5eead4;
+    letter-spacing: 0.04em;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* Zoom bar (right edge) */
+.zoombar {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: rgba(15, 18, 28, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 8px 6px;
+    backdrop-filter: blur(10px);
+}
+.zoombar button {
+    width: 26px;
+    height: 26px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #cdd5e0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    font-family: inherit;
+}
+.zoombar button:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+.zoombar-track {
+    position: relative;
+    width: 22px;
+    height: min(42vh, 340px);
+    cursor: pointer;
+    touch-action: none;
+}
+.zoombar-track::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 2px;
+}
+.zoombar-thumb {
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    width: 14px;
+    height: 14px;
+    transform: translate(-50%, -50%);
+    background: #5eead4;
+    border-radius: 50%;
+    box-shadow: 0 0 6px rgba(94, 234, 212, 0.6);
+    pointer-events: none;
+}
+.zoombar-tick {
+    position: absolute;
+    right: calc(100% + 12px);
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: #8b95a5;
+    white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    pointer-events: none;
+}
+.zoombar-tick::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 3px);
+    width: 7px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.3);
+}

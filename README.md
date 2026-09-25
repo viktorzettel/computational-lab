@@ -20,7 +20,7 @@ The public code does not establish profitable trading performance. A probability
 - The public modules contain explicit **reference** defaults. They do not identify current production settings.
 - The included test runs with Python and NumPy: `python3 -m unittest discover -s market-probability-engine/tests -v`.
 - Raw operational data, credentials, private decision rules, live sizing, and order submission are outside this repository.
-- The Gaia repository directory documents the published viewer. A newer local visualization is used on the portfolio website and has not been mirrored into this public repository.
+- The Gaia repository directory contains the current 150 ly catalogue, its data pipeline and the Vite/Three.js viewer.
 - RiskLens and Solar System Scale Explorer were early projects. Their READMEs describe how to run each prototype and distinguish its visualization or estimates from a validated physical or financial model.
 
 **Author:** Viktor Zettel · Economics, markets, computation
