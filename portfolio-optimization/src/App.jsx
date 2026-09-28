@@ -50,7 +50,7 @@ const methods = [
     title: "Return focus",
     subtitle: "Mean–variance optimization",
     detail:
-      "Uses historical average returns as an input; highly sensitive to estimation error.",
+      "Uses historical average returns with a 60% per-asset cap; highly sensitive to estimation error.",
   },
 ];
 const pct = (value, digits = 1) =>

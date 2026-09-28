@@ -292,7 +292,7 @@ class PortfolioArchitect:
         port.assets_stats(method_mu='hist', method_cov='hist')
 
         min_w = 0.05 if self.force_min_weight else 0.0
-        max_w = max(0.35, 1.0 / self.n_assets) if objective == 'aggressive_growth' else 1.0
+        max_w = 0.60 if objective == 'aggressive_growth' else 1.0
         
         port.lowerret = None
         port.upperlng = max_w
