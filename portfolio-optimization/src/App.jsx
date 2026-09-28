@@ -684,6 +684,13 @@ function App() {
                   model output, not a prediction or an instruction to trade.
                 </p>
               </div>
+              {result.risk_metrics.method !== "historical_empirical_daily" && (
+                <p className="legacy-notice" role="status">
+                  The connected API is still running the earlier risk model.
+                  Treat the volatility, VaR and shortfall figures below as
+                  provisional until the updated backend is deployed.
+                </p>
+              )}
               <div className="results-grid">
                 <Allocation weights={result.weights} />
                 <article className="result-card risk">
