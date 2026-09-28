@@ -228,6 +228,8 @@ function App() {
   const resultsRef = useRef(null);
   useEffect(() => () => controller.current?.abort(), []);
   const selected = methods.find((item) => item.id === method);
+  const currentRiskModel =
+    result?.risk_metrics?.method === "historical_empirical_daily";
   const treasuryCount = tickers.filter((ticker) =>
     STARTER.includes(ticker),
   ).length;
@@ -684,11 +686,11 @@ function App() {
                   model output, not a prediction or an instruction to trade.
                 </p>
               </div>
-              {result.risk_metrics.method !== "historical_empirical_daily" && (
+              {!currentRiskModel && (
                 <p className="legacy-notice" role="status">
                   The connected API is still running the earlier risk model.
-                  Treat the volatility, VaR and shortfall figures below as
-                  provisional until the updated backend is deployed.
+                  Volatility, VaR and shortfall are hidden until the updated
+                  backend is deployed.
                 </p>
               )}
               <div className="results-grid">
@@ -703,17 +705,29 @@ function App() {
                   <div className="metrics">
                     <div>
                       <span>DAILY VOLATILITY</span>
-                      <strong>{pct(result.risk_metrics.volatility, 2)}</strong>
+                      <strong>
+                        {currentRiskModel
+                          ? pct(result.risk_metrics.volatility, 2)
+                          : "—"}
+                      </strong>
                       <p>Estimated one-day return variability.</p>
                     </div>
                     <div>
                       <span>VALUE AT RISK · 95%</span>
-                      <strong>{pct(result.risk_metrics.VaR_95, 2)}</strong>
+                      <strong>
+                        {currentRiskModel
+                          ? pct(result.risk_metrics.VaR_95, 2)
+                          : "—"}
+                      </strong>
                       <p>Estimated one-day loss threshold at the 95% level.</p>
                     </div>
                     <div>
                       <span>EXPECTED SHORTFALL · 95%</span>
-                      <strong>{pct(result.risk_metrics.ES_95, 2)}</strong>
+                      <strong>
+                        {currentRiskModel
+                          ? pct(result.risk_metrics.ES_95, 2)
+                          : "—"}
+                      </strong>
                       <p>
                         Estimated average loss in the worst 5% of modeled days.
                       </p>
