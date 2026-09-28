@@ -1,13 +1,12 @@
 # filename: main.py
-# RiskLens research prototype backend
+# RiskLens research backend
 import numpy as np
 import pandas as pd
 import yfinance as yf
-import scipy.stats as stats
-from arch import arch_model
 import riskfolio as rp
 import warnings
 import os
+import re
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, validator, Field
 from typing import List, Dict, Optional, Any
@@ -19,12 +18,12 @@ from datetime import datetime
 warnings.filterwarnings("ignore")
 
 # Initialize the API
-app = FastAPI(title="RiskLens Brain", version="2.1")
+app = FastAPI(title="RiskLens API", version="3.0")
 
 # Allow the frontend (React) to talk to this backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origin.strip() for origin in os.getenv("RISKLENS_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if origin.strip()],
+    allow_origins=[origin.strip() for origin in os.getenv("RISKLENS_CORS_ORIGINS", "https://portfoliolens.netlify.app,http://localhost:5173,http://127.0.0.1:5173").split(",") if origin.strip()],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -112,18 +111,26 @@ class PortfolioRequest(BaseModel):
     def sanitize_tickers(cls, v):
         # 1. Uppercase and Trim
         top_clean = [t.strip().upper() for t in v]
-
+        
         # 2. Remove Duplicates (preserve order)
         seen = set()
         unique = [x for x in top_clean if not (x in seen or seen.add(x))]
-
+        
         # 3. Check Constraints
         if len(unique) < 2:
             raise ValueError("Must provide at least 2 distinct tickers.")
         if len(unique) > 10:
             raise ValueError("Maximum 10 assets allowed.")
-
+        if any(not re.fullmatch(r'[A-Z0-9.^=-]{1,15}', x) for x in unique):
+            raise ValueError("One or more ticker symbols have an invalid format.")
+            
         return unique
+
+    @validator('strategy')
+    def validate_strategy(cls, v):
+        if v not in {'safety_first', 'smart_balance', 'aggressive_growth'}:
+            raise ValueError("Unknown allocation method.")
+        return v
 
 
 # ==========================================================
@@ -141,18 +148,18 @@ class DataManager:
 
         # Filter tickers to match what actually came back in data
         self.available_tickers = list(self.data.columns)
-
+        
         if len(self.available_tickers) < 2:
              raise ValueError("Insufficient valid assets found to build portfolio.")
 
         # Calculate Returns and Sanitize
         self.returns = self.data.pct_change().dropna()
-
+        
         # Final safety check for Infinite values
         if not np.isfinite(self.returns.values).all():
              self.returns = self.returns.replace([np.inf, -np.inf], np.nan).dropna()
 
-        self.has_crypto = any(t.endswith('-USD') for t in self.available_tickers)
+        self.has_crypto = all(t.endswith('-USD') for t in self.available_tickers)
         self.trading_days = 365 if self.has_crypto else 252
 
 
@@ -200,6 +207,7 @@ class PortfolioArchitect:
         self.tickers = list(self.returns.columns)
         self.force_min_weight = force_min_weight
         self.cluster_order = None
+        self.method_used = None
 
     def build_portfolio(self, objective):
         # Path 1: Safety First -> HRP (Hierarchical Risk Parity)
@@ -209,14 +217,21 @@ class PortfolioArchitect:
                 return self._build_hrp(objective)
             except Exception as e:
                 print(f"HRP Optimization Failed: {e}")
-
-        # Path 2: Smart Balance / Aggressive -> NCO (Nested Clustered Optimization)
-        else:
+        
+        # Path 2: Risk-adjusted allocation -> NCO with a Sharpe objective.
+        elif objective == 'smart_balance':
             try:
                 print(f"Strategy: {objective} -> Attempting NCO")
                 return self._build_nco(objective)
             except Exception as e:
                 print(f"NCO Optimization Failed: {e}")
+
+        # Path 3: Return-seeking allocation -> constrained mean-variance.
+        elif objective == 'aggressive_growth':
+            try:
+                return self._build_mean_variance(objective)
+            except Exception as e:
+                print(f"Mean-Variance Optimization Failed: {e}")
 
         # Fallback: Mean-Variance (Constraint-based)
         try:
@@ -224,52 +239,40 @@ class PortfolioArchitect:
             return self._build_mean_variance(objective)
         except Exception as e:
             print(f"Mean-Variance Optimization Failed: {e}")
-
+            
         # No Fallback 3 (Equal Weights) per user request
         raise ValueError("Portfolio optimization failed for all methods. Please check input data.")
 
     def _build_hrp(self, objective):
         port = rp.HCPortfolio(returns=self.returns)
-
+        
         # Safety First = CVaR (Tail Risk), Ward Linkage
         weights = port.optimization(
             model='HRP',
             codependence='pearson',
-            rm='CVaR',
-            rf=0.04,
+            rm='CVaR', 
+            rf=0.0,
             linkage='ward',
             leaf_order=True
         )
-        return self._process_weights(weights, objective, port)
+        result = self._process_weights(weights, objective, port)
+        self.method_used = 'HRP / CVaR'
+        return result
 
     def _build_nco(self, objective):
         port = rp.HCPortfolio(returns=self.returns)
-
-        # NCO - Nested Clustered Optimization
-        # Smart Balance = Max Sharpe (MV)
-        # Aggressive = Max Return (not directly supported in NCO standard, usually Min Variance of clusters)
-        # We tune 'rm' (risk measure) and 'obj' (objective)
-
-        if objective == 'smart_balance':
-            # NCO with Sharpe Ratio objective
-            # Note: Riskfolio NCO uses 'semi' or 'abs' deviation usually.
-            # We map Smart Balance to 'MV' (Mean-Variance) internal structure of NCO
-            rm = 'MV'
-            linkage = 'ward'
-        else:
-            # Aggressive - Use a more aggressive linkage or risk measure
-            rm = 'MV'
-            linkage = 'single' # Single linkage often creates disparate clusters
-
         weights = port.optimization(
-            model='NCO',  # <--- Changed to NCO
+            model='NCO',
             codependence='pearson',
-            rm=rm,
-            rf=0.04,
-            linkage=linkage,
+            obj='Sharpe',
+            rm='MV',
+            rf=0.0,
+            linkage='ward',
             leaf_order=True
         )
-        return self._process_weights(weights, objective, port)
+        result = self._process_weights(weights, objective, port)
+        self.method_used = 'NCO / Sharpe'
+        return result
 
     def _process_weights(self, weights, objective, port):
         if weights is None or weights.empty:
@@ -278,10 +281,10 @@ class PortfolioArchitect:
         # Safer column access
         w_series = weights.iloc[:, 0]
         weights_dict = w_series.to_dict()
-
+        
         weights_dict = self._apply_constraints(weights_dict, objective)
         self._set_cluster_order(port)
-
+        
         return weights_dict, self.cluster_order
 
     def _build_mean_variance(self, objective):
@@ -289,19 +292,19 @@ class PortfolioArchitect:
         port.assets_stats(method_mu='hist', method_cov='hist')
 
         min_w = 0.05 if self.force_min_weight else 0.0
-        max_w = 0.35 if objective == 'aggressive_growth' else 1.0
-
+        max_w = max(0.35, 1.0 / self.n_assets) if objective == 'aggressive_growth' else 1.0
+        
         port.lowerret = None
         port.upperlng = max_w
         port.lowerlng = min_w
-
+        
         obj_map = {'safety_first': 'MinRisk', 'smart_balance': 'Sharpe', 'aggressive_growth': 'MaxRet'}
-
+        
         weights = port.optimization(
             model='Classic',
             rm='MV',
             obj=obj_map.get(objective, 'Sharpe'),
-            rf=0.04
+            rf=0.0
         )
 
         if weights is None or weights.empty:
@@ -309,34 +312,26 @@ class PortfolioArchitect:
 
         w_series = weights.iloc[:, 0]
         weights_dict = w_series.to_dict()
-
+        
         # Normalize just in case
         total = sum(weights_dict.values())
         weights_dict = {k: v/total for k, v in weights_dict.items()}
-
+        
         self.cluster_order = self.tickers
+        self.method_used = 'Mean–variance / ' + obj_map.get(objective, 'Sharpe')
         return weights_dict, self.cluster_order
 
     def _apply_constraints(self, weights_dict, objective):
         """Manually apply min/max constraints for HRP outputs"""
         # (Simplified Logic for HRP post-processing constraint)
         if self.force_min_weight:
-             min_w = 0.05
              keys = list(weights_dict.keys())
-             vals = np.array(list(weights_dict.values()))
-             # Simple clip and re-normalize
-             vals = np.maximum(vals, min_w)
-             vals = vals / vals.sum()
-             weights_dict = dict(zip(keys, vals))
-
-        if objective == 'aggressive_growth':
-             max_w = 0.35
-             keys = list(weights_dict.keys())
-             vals = np.array(list(weights_dict.values()))
-             # Simple clip and re-normalize (iterative to ensure sum=1)
-             for _ in range(3):
-                 vals = np.minimum(vals, max_w)
-                 vals = vals / vals.sum()
+             vals = np.maximum(np.array(list(weights_dict.values()), dtype=float), 0)
+             # Reserve the 5% floor first, then distribute the remaining
+             # weight in proportion to the unconstrained allocation.
+             floor = 0.05
+             room = 1.0 - len(vals) * floor
+             vals = np.full(len(vals), floor) + room * vals / vals.sum()
              weights_dict = dict(zip(keys, vals))
 
         return {k: float(v) for k,v in weights_dict.items()}
@@ -368,7 +363,7 @@ class RiskEngine:
             individual_vols = np.sqrt(np.diag(self.cov))
             weighted_sum_vols = np.sum(self.weights * individual_vols)
             portfolio_vol = np.sqrt(np.dot(self.weights.T, np.dot(self.cov, self.weights)))
-
+            
             if portfolio_vol > 0:
                 return float(weighted_sum_vols / portfolio_vol)
             return 1.0
@@ -376,53 +371,23 @@ class RiskEngine:
             return 1.0
 
     def run_stress_test(self):
-        portfolio_series = self.returns.dot(self.weights) * 100
-
-        # Defaults
-        VaR_95 = 0.0
-        ES_95 = 0.0
-        vol = 0.0
-
-        # 1. Volatility
-        try:
-            vol = float(portfolio_series.std())
-        except:
-            pass
-
-        # 2. GARCH / Historical VaR & ES
-        try:
-            model = arch_model(portfolio_series, vol='Garch', p=1, o=1, q=1, dist='t')
-            res = model.fit(disp='off', show_warning=False)
-
-            # Forecast
-            forecast = res.forecast(horizon=1)
-            vol_forecast = np.sqrt(forecast.variance.values[-1, 0])
-            nu = res.params['nu']
-            t_quantile = stats.t.ppf(0.05, nu)
-
-            VaR_95 = abs(vol_forecast * t_quantile)
-
-            # ES
-            pdf_at_q = stats.t.pdf(t_quantile, nu)
-            es_factor = (nu + t_quantile**2)/(nu - 1)
-            ES_95 = vol_forecast * es_factor * (pdf_at_q / 0.05)
-
-            vol = vol_forecast # Use GARCH forecast if available
-
-        except Exception:
-            # Historical Fallback
-            try:
-                VaR_95 = abs(np.percentile(portfolio_series, 5))
-                tail = portfolio_series[portfolio_series <= -VaR_95]
-                ES_95 = abs(tail.mean()) if len(tail) > 0 else VaR_95
-            except:
-                pass # Already 0.0
+        portfolio_series = self.returns.dot(self.weights).dropna() * 100
+        if portfolio_series.empty:
+            raise ValueError("Insufficient returns to estimate portfolio risk.")
+        # Empirical one-day risk estimates. The 5th percentile need not be a
+        # loss; in that case the reported loss threshold is zero.
+        lower_quantile = float(np.percentile(portfolio_series, 5))
+        tail = portfolio_series[portfolio_series <= lower_quantile]
+        vol = float(portfolio_series.std())
+        VaR_95 = max(0.0, -lower_quantile)
+        ES_95 = max(0.0, -float(tail.mean())) if len(tail) else VaR_95
 
         return {
             "volatility": float(vol),
             "VaR_95": float(VaR_95),
             "ES_95": float(ES_95),
             "diversification_ratio": float(self.calculate_diversification_ratio()),
+            "method": "historical_empirical_daily",
             #"risk_contribution": self._calc_risk_contribution() # Kept simple for now
         }
 
@@ -432,7 +397,7 @@ class RiskEngine:
 # ==========================================================
 @app.get("/")
 def home():
-    return {"message": "RiskLens Brain v2.1 (Stable) Active"}
+    return {"message": "RiskLens API active", "version": "3.0"}
 
 @app.post("/analyze")
 def analyze_portfolio(request: PortfolioRequest):
@@ -459,17 +424,23 @@ def analyze_portfolio(request: PortfolioRequest):
         # 5. Risk Metrics
         risk_engine = RiskEngine(dm, weights_dict)
         risk_metrics = risk_engine.run_stress_test()
-
+        
         # 6. Construct Safe Response
         # Clean entire dictionary to ensure no numpy types leak
         response_payload = {
             "market_status": market_status,
             "weights": weights_dict,
             "risk_metrics": risk_metrics,
+            "optimization_method": architect.method_used,
+            "sample": {
+                "observations": len(dm.returns),
+                "start": str(dm.returns.index[0].date()),
+                "end": str(dm.returns.index[-1].date()),
+            },
             "cluster_order": cluster_order,
             "correlation_matrix": corr_data
         }
-
+        
         return clean_payload(response_payload)
 
     except ValueError as e:
