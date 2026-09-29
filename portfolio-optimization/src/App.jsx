@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import "./App.css";
 
@@ -55,6 +55,31 @@ const methods = [
 ];
 const pct = (value, digits = 1) =>
   Number.isFinite(Number(value)) ? `${Number(value).toFixed(digits)}%` : "—";
+
+function searchAssets(directory, input) {
+  const query = input.trim().toLowerCase().replace(/\s+/g, " ");
+  if (!query) return [];
+  const matches = [];
+  for (const asset of directory) {
+    const symbol = asset.symbol.toLowerCase();
+    const name = asset.name.toLowerCase();
+    let score = Infinity;
+    if (symbol === query) score = 0;
+    else if (query.length < 2) continue;
+    else if (name === query) score = 1;
+    else if (name.startsWith(query)) score = 2;
+    else if (symbol.startsWith(query)) score = 3;
+    else if (name.includes(` ${query}`)) score = 4;
+    else if (name.includes(query)) score = 5;
+    if (Number.isFinite(score)) matches.push({ ...asset, score });
+  }
+  return matches
+    .sort((a, b) =>
+      a.score - b.score || a.name.length - b.name.length ||
+      a.symbol.localeCompare(b.symbol),
+    )
+    .slice(0, 6);
+}
 
 function Mark() {
   return (
@@ -217,6 +242,8 @@ function App() {
   const [tickers, setTickers] = useState([]);
   const [draft, setDraft] = useState("");
   const [inputError, setInputError] = useState("");
+  const [directory, setDirectory] = useState([]);
+  const [directoryStatus, setDirectoryStatus] = useState("loading");
   const [method, setMethod] = useState("safety");
   const [minimum, setMinimum] = useState(false);
   const [result, setResult] = useState(null);
@@ -227,12 +254,44 @@ function App() {
   const controller = useRef(null);
   const resultsRef = useRef(null);
   useEffect(() => () => controller.current?.abort(), []);
+  useEffect(() => {
+    const request = new AbortController();
+    fetch(`${import.meta.env.BASE_URL}symbol-directory.json`, {
+      signal: request.signal,
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("Symbol directory unavailable");
+        return response.json();
+      })
+      .then((data) => {
+        setDirectory(
+          data.assets.map(([symbol, name, type]) => ({ symbol, name, type })),
+        );
+        setDirectoryStatus("ready");
+      })
+      .catch((cause) => {
+        if (cause.name !== "AbortError") setDirectoryStatus("error");
+      });
+    return () => request.abort();
+  }, []);
   const selected = methods.find((item) => item.id === method);
   const currentRiskModel =
     result?.risk_metrics?.method === "historical_empirical_daily";
   const treasuryCount = tickers.filter((ticker) =>
     STARTER.includes(ticker),
   ).length;
+  const assetBySymbol = useMemo(
+    () => new Map(directory.map((asset) => [asset.symbol, asset])),
+    [directory],
+  );
+  const matches = useMemo(() => searchAssets(directory, draft), [directory, draft]);
+  const chosenAsset = matches[0];
+  const manualSymbol =
+    directoryStatus !== "loading" &&
+    !chosenAsset &&
+    /^[A-Z0-9.^=-]{1,15}$/.test(draft.trim())
+      ? draft.trim()
+      : null;
   const changeAssets = (next) => {
     setTickers(next);
     setResult(null);
@@ -251,30 +310,33 @@ function App() {
     setError("");
     setLoading(false);
   };
-  const addAssets = (event) => {
-    event.preventDefault();
-    const incoming = draft
-      .toUpperCase()
-      .split(/[\s,;]+/)
-      .filter(Boolean);
-    if (!incoming.length) {
-      setInputError("Enter a ticker symbol first.");
-      return;
-    }
-    if (incoming.some((item) => !/^[A-Z0-9.^=-]{1,15}$/.test(item))) {
-      setInputError("Use valid symbols separated by commas or spaces.");
-      return;
-    }
-    const next = [...new Set([...tickers, ...incoming])];
-    if (next.length === tickers.length) {
-      setInputError("That ticker is already in the list.");
-      return;
-    }
-    if (next.length > 10) {
+  const toggleStarter = (symbol) => {
+    if (tickers.includes(symbol)) {
+      changeAssets(tickers.filter((ticker) => ticker !== symbol));
+    } else if (tickers.length < 10) {
+      changeAssets([...tickers, symbol]);
+    } else {
       setInputError("The model supports up to 10 assets.");
       return;
     }
-    changeAssets(next);
+    setInputError("");
+  };
+  const addAssets = (event) => {
+    event.preventDefault();
+    const symbol = chosenAsset?.symbol || manualSymbol;
+    if (!symbol) {
+      setInputError("Choose a listed result or enter an exact ticker symbol.");
+      return;
+    }
+    if (tickers.includes(symbol)) {
+      setInputError(`${symbol} is already in the list.`);
+      return;
+    }
+    if (tickers.length >= 10) {
+      setInputError("The model supports up to 10 assets.");
+      return;
+    }
+    changeAssets([...tickers, symbol]);
     setDraft("");
     setInputError("");
   };
@@ -483,6 +545,34 @@ function App() {
                         </p>
                       </div>
                     )}
+                    {route === "propose" && (
+                      <div className="treasury-options" aria-label="Treasury ETF choices">
+                        <span className="eyebrow">TREASURY BUILDING BLOCKS</span>
+                        <div className="treasury-options-grid">
+                          {STARTER.map((symbol) => {
+                            const active = tickers.includes(symbol);
+                            return (
+                              <button
+                                type="button"
+                                key={symbol}
+                                className={`treasury-option ${active ? "selected" : ""}`}
+                                onClick={() => toggleStarter(symbol)}
+                                aria-pressed={active}
+                                aria-label={`${active ? "Remove" : "Add"} ${symbol} ${funds[symbol].description}`}
+                              >
+                                <span>
+                                  <strong>{symbol}</strong>
+                                  <small>{funds[symbol].description}</small>
+                                </span>
+                                <span className="treasury-option-action">
+                                  {active ? "✓ Added" : "+ Add"}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                     <div className="assets">
                       {tickers.length ? (
                         tickers.map((ticker, index) => (
@@ -494,7 +584,8 @@ function App() {
                               <strong>{ticker}</strong>
                               <small>
                                 {funds[ticker]?.description ||
-                                  "User-selected asset · risk not assessed"}
+                                  assetBySymbol.get(ticker)?.name ||
+                                  "Symbol not in directory · verify before analysis"}
                               </small>
                             </div>
                             <span
@@ -523,26 +614,79 @@ function App() {
                       )}
                     </div>
                     <form onSubmit={addAssets} className="add-form">
-                      <label htmlFor="ticker">Add ticker symbols</label>
-                      <div>
+                      <label htmlFor="ticker">Find a company or ticker</label>
+                      <div className="lookup-entry">
                         <input
                           id="ticker"
                           value={draft}
                           onChange={(event) => {
-                            setDraft(event.target.value.toUpperCase());
+                            setDraft(event.target.value);
                             setInputError("");
                           }}
-                          placeholder="e.g. AAPL or BTC-USD"
+                          placeholder="e.g. Apple, MU or BTC-USD"
                           autoComplete="off"
                           aria-describedby="ticker-help ticker-error"
                         />
-                        <button type="submit" disabled={tickers.length >= 10}>
-                          Add asset <span>＋</span>
+                        <button
+                          type="submit"
+                          disabled={
+                            tickers.length >= 10 ||
+                            (!chosenAsset && !manualSymbol) ||
+                            tickers.includes(chosenAsset?.symbol || manualSymbol)
+                          }
+                        >
+                          Add {chosenAsset?.symbol || manualSymbol || "asset"} <span>＋</span>
                         </button>
                       </div>
+                      {draft.trim() && directoryStatus === "loading" && (
+                        <p className="lookup-feedback" role="status">
+                          Loading the listed-symbol directory…
+                        </p>
+                      )}
+                      {draft.trim() && directoryStatus === "error" && (
+                        <p className="lookup-feedback" role="status">
+                          Directory unavailable. Exact tickers can still be added without name confirmation.
+                        </p>
+                      )}
+                      {chosenAsset && (
+                        <div className="lookup-feedback matched" role="status">
+                          <span>TOP MATCH</span>
+                          <strong>{chosenAsset.symbol} · {chosenAsset.name}</strong>
+                          <small>{chosenAsset.type} · price history checked when you analyze</small>
+                        </div>
+                      )}
+                      {matches.length > 1 && (
+                        <div className="asset-suggestions" aria-label="Other listed matches">
+                          <span>OTHER MATCHES</span>
+                          {matches.slice(1).map((asset) => (
+                            <button
+                              type="button"
+                              key={asset.symbol}
+                              onClick={() => {
+                                setDraft(asset.symbol);
+                                setInputError("");
+                              }}
+                            >
+                              <b>{asset.symbol}</b>
+                              <span>{asset.name}</span>
+                              <small>{asset.type}</small>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {manualSymbol && (
+                        <p className="lookup-feedback unverified" role="status">
+                          {manualSymbol} is not in the listed-symbol directory. You may add it as an unverified ticker; market data is checked during analysis.
+                        </p>
+                      )}
+                      {draft.trim() && directoryStatus === "ready" && !chosenAsset && !manualSymbol && (
+                        <p className="lookup-feedback" role="status">
+                          No listed match. Try a company name or exact ticker.
+                        </p>
+                      )}
                       <small id="ticker-help">
-                        Separate symbols with commas or spaces. Market data is
-                        checked when you analyze.
+                        Add one asset at a time. Matches come from a Nasdaq Trader
+                        listing snapshot; availability is checked when you analyze.
                       </small>
                       {inputError && (
                         <p
