@@ -6,6 +6,7 @@ RiskLens is an exploratory portfolio research workspace. It pairs a React/Vite i
 
 - **Propose a starting portfolio** preloads BIL and SHY, two U.S.-listed ETFs holding short-duration Treasury securities. Their outlined buttons can be toggled on or off. They are example inputs, not a guaranteed defensive allocation or a recommendation to buy.
 - **Start from scratch** begins with an empty list. At least two and at most ten symbols are required.
+- Both entry paths initially select the tail-risk method; users can switch methods. The current public API can fail to optimize some asset pairs under the risk-adjusted route, so the interface reports that failure instead of inventing weights.
 - Asset search accepts a company name or ticker. A local snapshot of Nasdaq Trader's listed-symbol directory shows the matched name and symbol before adding (for example, Apple → AAPL and MU → Micron Technology). The directory is identification data, not a live price feed; the price source is checked only when analysis runs. Exact tickers outside the directory can still be added with an unverified label.
 - Three allocation methods are exposed: HRP with CVaR risk (tail-risk focus), NCO with a Sharpe objective (risk-adjusted focus), and constrained mean–variance with a maximum-return objective and 60% per-asset cap (return focus). If the selected method fails, the API attempts a mean–variance fallback.
 - One-day volatility, 95% VaR and 95% expected shortfall are empirical estimates from the selected portfolio's historical daily returns. Correlations use the same sample.

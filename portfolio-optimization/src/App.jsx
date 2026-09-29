@@ -302,7 +302,7 @@ function App() {
     controller.current?.abort();
     setRoute(next);
     setTickers(next === "propose" ? STARTER : []);
-    setMethod(next === "propose" ? "safety" : "balanced");
+    setMethod("safety");
     setDraft("");
     setInputError("");
     setResult(null);
