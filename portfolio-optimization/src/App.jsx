@@ -4,7 +4,7 @@ import "./App.css";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "https://risklens-api-r8yc.onrender.com";
-const STARTER = ["SGOV", "SHY"];
+const STARTER = ["BIL", "SHY"];
 const COLORS = [
   "#a7e2d1",
   "#afc4f5",
@@ -18,9 +18,9 @@ const COLORS = [
   "#d5c188",
 ];
 const funds = {
-  SGOV: {
-    description: "0–3 month U.S. Treasury ETF",
-    link: "https://www.ishares.com/us/products/314116/ishares-0-3-month-treasury-bond-etf",
+  BIL: {
+    description: "1–3 month U.S. Treasury bill ETF",
+    link: "https://www.ssga.com/us/en/intermediary/etfs/state-street-spdr-bloomberg-1-3-month-t-bill-etf-bil",
   },
   SHY: {
     description: "1–3 year U.S. Treasury ETF",
@@ -419,7 +419,7 @@ function App() {
                   higher-risk assets only after your own research.
                 </p>
                 <span className="route-bottom">
-                  SGOV + SHY prefilled <Arrow />
+                  BIL + SHY prefilled <Arrow />
                 </span>
               </button>
               <button
@@ -474,7 +474,7 @@ function App() {
                       <div className="draft-note">
                         <b>i</b>
                         <p>
-                          SGOV and SHY are{" "}
+                          BIL and SHY are{" "}
                           <strong>ETFs holding U.S. Treasury securities</strong>
                           , not individual Treasury bills. They carry
                           interest-rate, fund and—outside USD—currency risk.
@@ -818,12 +818,12 @@ function App() {
                 <span>02</span>
                 <h3>Treasury draft</h3>
                 <p>
-                  The proposed set starts with SGOV (0–3 months) and SHY (1–3
+                  The proposed set starts with BIL (1–3 months) and SHY (1–3
                   years). These are U.S.-listed Treasury ETFs; their prices and
                   yields can change.
                 </p>
-                <a href={funds.SGOV.link} target="_blank" rel="noreferrer">
-                  SGOV fund page <Arrow />
+                <a href={funds.BIL.link} target="_blank" rel="noreferrer">
+                  BIL fund page <Arrow />
                 </a>
                 <a href={funds.SHY.link} target="_blank" rel="noreferrer">
                   SHY fund page <Arrow />
