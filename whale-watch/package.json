@@ -1,0 +1,27 @@
+{
+  "name": "whale-watch",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5174 --strictPort",
+    "build": "tsc -b && vite build",
+    "start": "node scripts/start.mjs",
+    "setup": "node scripts/setup.mjs",
+    "test": "vitest run",
+    "test:backend": "node scripts/test-backend.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "~5.9.2",
+    "vite": "^6.3.6",
+    "vitest": "^4.1.11"
+  }
+}

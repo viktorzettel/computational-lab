@@ -1,0 +1,45 @@
+"""Verified reporting identities. Portraits identify people associated with each firm."""
+
+FUNDS = [
+    {
+        "id": "atreides", "name": "Atreides", "legalName": "Atreides Management, LP",
+        "person": "Gavin Baker", "role": "Managing partner & CIO", "color": "#72e7be",
+        "portrait": "/portraits/gavin-baker.webp", "tagline": "The tech hunter",
+        "managers": ["0001777813-atreides-management-lp"],
+        "scope": "Atreides Management's public 13F report.",
+    },
+    {
+        "id": "citadel", "name": "Citadel", "legalName": "Citadel Advisors LLC",
+        "person": "Ken Griffin", "role": "Founder & CEO", "color": "#91b6ff",
+        "portrait": "/portraits/ken-griffin.jpg", "tagline": "The multi-strategy giant",
+        "managers": ["0001423053-citadel-advisors-llc"],
+        "scope": "Includes Wellington. Citadel Advisors' 13F combines reporting managers; Wellington's individual portfolio cannot be isolated from this filing.",
+    },
+    {
+        "id": "duquesne", "name": "Duquesne", "legalName": "Duquesne Family Office LLC",
+        "person": "Stanley Druckenmiller", "role": "Founder", "color": "#c4a1ff",
+        "portrait": "/portraits/stanley-druckenmiller.jpg", "tagline": "The macro navigator",
+        "managers": ["0001536411-duquesne-family-office-llc"],
+        "scope": "Duquesne Family Office's public 13F report.",
+    },
+    {
+        "id": "berkshire", "name": "Berkshire", "legalName": "Berkshire Hathaway Inc.",
+        "person": "Warren Buffett", "role": "Chairman", "color": "#f5c77d",
+        "portrait": "/portraits/warren-buffett.jpg", "tagline": "The patient whale",
+        "managers": ["0001067983-berkshire-hathaway-inc"],
+        "scope": "Berkshire Hathaway's public 13F report. The portrait represents its chairman, not every investment decision or its entire business.",
+    },
+    {
+        "id": "pershing", "name": "Pershing Square", "legalName": "Pershing Square Inc.",
+        "person": "Bill Ackman", "role": "Chairman & CEO", "color": "#ff9f96",
+        "portrait": "/portraits/bill-ackman.jpg", "tagline": "The conviction player",
+        "managers": ["0002026053-pershing-square-inc", "0001336528-pershing-square-capital-management-lp"],
+        "scope": "From Q2 2026, uses Pershing Square Inc.'s consolidated report. Earlier quarters use Pershing Square Capital Management, LP. Reporting scope changed: cross-filer changes are not confirmed trades.",
+    },
+]
+
+BY_ID = {fund["id"]: fund for fund in FUNDS}
+
+
+def public_fund(fund):
+    return {key: value for key, value in fund.items() if key != "managers"}

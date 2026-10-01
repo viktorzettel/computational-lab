@@ -9,6 +9,7 @@ Selected computational research by Viktor Zettel, at the intersection of financi
 | [RiskLens](portfolio-optimization/) | How do historical portfolio data and allocation methods shape estimated risk? | React dashboard, FastAPI analysis service, HRP/NCO allocation, volatility, VaR/ES and correlation views |
 | [Solar System Scale Explorer](real-scale-solar-system/) | How can average planetary distances and body sizes be conveyed on a continuous scale? | React/Vite two-dimensional explorer with travel controls, ruler and planet information |
 | [Atlas Research Terminal](atlas-research-terminal/) | How can a local TradingView-style workspace support chart analysis without built-in watchlist or indicator quotas? | React/TypeScript candle charts, FastAPI market-data adapters, configurable indicators, Jordi Visser daily SMA preset, watchlists and breadth scans |
+| [WhaleWatch](whale-watch/) | What do major managers hold in their latest public 13F reports, and how did positions change from the previous quarter? | Standalone React/FastAPI tracker, five managers with portraits, allocation charts, quarterly position changes, filing sources, CSV export and a deadline countdown |
 
 ## How to read the market research
 
