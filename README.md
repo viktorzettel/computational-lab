@@ -8,6 +8,7 @@ Selected computational research by Viktor Zettel, at the intersection of financi
 | [Gaia Nearby Stars](gaia-nearby-stars/) | What does the nearby stellar volume look like in Sun-centred coordinates? | Gaia DR3 catalogue preparation, methodology, interactive Three.js viewer |
 | [RiskLens](portfolio-optimization/) | How do historical portfolio data and allocation methods shape estimated risk? | React dashboard, FastAPI analysis service, HRP/NCO allocation, volatility, VaR/ES and correlation views |
 | [Solar System Scale Explorer](real-scale-solar-system/) | How can average planetary distances and body sizes be conveyed on a continuous scale? | React/Vite two-dimensional explorer with travel controls, ruler and planet information |
+| [Atlas Research Terminal](atlas-research-terminal/) | How can a local TradingView-style workspace support chart analysis without built-in watchlist or indicator quotas? | React/TypeScript candle charts, FastAPI market-data adapters, configurable indicators, Jordi Visser daily SMA preset, watchlists and breadth scans |
 
 ## How to read the market research
 
