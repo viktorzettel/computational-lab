@@ -21,7 +21,7 @@ export default function Modal({
     const dialog = ref.current;
     const focusables = () => [
       ...(dialog?.querySelectorAll<HTMLElement>(
-        'button:not(:disabled),input,textarea,select,[tabindex="0"]',
+        'button:not(:disabled),a[href],input,textarea,select,[tabindex="0"]',
       ) || []),
     ];
     const target =

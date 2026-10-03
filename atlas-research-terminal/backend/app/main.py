@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from .config import Settings
+from .analysts import AnalystTargetsResponse
 from .models import AssetDetail, HistoryResponse, Timeframe
 from .providers.base import AssetNotFound, ProviderRegistry
 from .providers.coinbase import CoinbaseProvider
@@ -29,7 +30,7 @@ def create_app(settings: Settings | None = None, service: MarketService | None =
         yield
         service.close()
 
-    app = FastAPI(title="Atlas — Local Research Terminal", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="FinanceBro — Local Research Terminal", version="0.1.0", lifespan=lifespan)
     app.state.market_service = service
     app.state.model_registry = models
     app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173", "http://127.0.0.1:4173"],
@@ -78,6 +79,13 @@ def create_app(settings: Settings | None = None, service: MarketService | None =
     @app.get("/api/models")
     async def model_list():
         return {"models": models.describe()}
+
+    @app.get("/api/analyst-targets/{symbol}", response_model=AnalystTargetsResponse)
+    async def analyst_targets(symbol: str, refresh: bool = False):
+        try:
+            return await service.analyst_targets(symbol, refresh=refresh)
+        except AssetNotFound as exc:
+            raise HTTPException(404, str(exc)) from exc
 
     @app.get("/api/models/{model_id}")
     async def model_series(model_id: str, symbol: str = "NVDA", timeframe: Timeframe = "1D", decay: float | None = None,

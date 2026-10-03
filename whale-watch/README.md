@@ -1,6 +1,10 @@
 # WhaleWatch
 
-A separate local 13F portfolio tracker. Follow the big fish: Atreides, Citadel (including Wellington), Duquesne Family Office, Berkshire Hathaway, and Pershing Square.
+**See what the big fish are holding.** WhaleWatch is a free, open-source portfolio tracker for learning from some of the best-known investors. See what Atreides, Citadel (including Wellington), Stanley Druckenmiller’s Duquesne, Warren Buffett’s Berkshire, and Bill Ackman’s Pershing Square reported owning—and what they added, trimmed, bought for the first time, or sold out of since the previous quarter.
+
+Pick an investor, explore the holdings pie chart, and compare position sizes without digging through filing tables. Headshots make it easy to find your favorites; source links, CSV export, and a countdown to the next filing deadline help you keep following the story.
+
+The tracker shows quarterly public 13F snapshots. It helps you understand changes in reported portfolios; it cannot show live trades, exact trade dates, or everything a fund owns.
 
 ## Run
 
@@ -90,3 +94,7 @@ npm run test:backend
 Backend regressions cover SEC deadline rollovers, amendments, Pershing's reporting transition, option/principal separation, value units, malformed payload rejection, quantity comparisons, and stale caching. Frontend tests cover allocation denominators, exited holdings, top-ten aggregation, and countdown behavior. Browser checks cover all five managers, quarter selection, Citadel pagination/search, keyboard slice filtering, expanded details, exits, and the mobile layout.
 
 See [third-party notices](THIRD_PARTY_NOTICES.md) for portrait sources and font licenses.
+
+## License
+
+Project-authored code is available under the [MIT License](LICENSE). Third-party photos, fonts and other assets retain their own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

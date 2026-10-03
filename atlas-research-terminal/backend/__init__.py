@@ -1,1 +1,1 @@
-"""Local Atlas market-data service."""
+"""Local FinanceBro market-data service."""

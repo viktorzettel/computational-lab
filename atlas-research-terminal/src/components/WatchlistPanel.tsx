@@ -50,9 +50,14 @@ export default function WatchlistPanel(p: Props) {
   return (
     <aside className={`watchlist-panel ${p.compactRows ? "compact" : ""}`}>
       <div className="sidebar-heading">
-        <span>
-          WATCHLISTS <span className="count-badge">{p.lists.length}</span>
-        </span>
+        <div className="financebro-brand" aria-label="FinanceBro">
+          <strong>
+            Finance<span>Bro</span>
+          </strong>
+          <small>
+            WATCHLISTS <span className="count-badge">{p.lists.length}</span>
+          </small>
+        </div>
         <button
           aria-label="Create watchlist"
           title="Create watchlist"

@@ -1,4 +1,4 @@
-# Atlas data service
+# FinanceBro data service
 
 FastAPI serves provider-independent assets, snapshots, and OHLCV. Start from the repository root:
 
@@ -6,9 +6,9 @@ FastAPI serves provider-independent assets, snapshots, and OHLCV. Start from the
 .venv/bin/python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Use `ATLAS_DATA_MODE=demo` for an offline preview. The default is `live`; provider failure first returns stale live cache with its original timestamp and a warning, then falls back to deterministic, clearly labeled synthetic samples when no live cache exists. Samples are fixed at **2026-09-29 20:00 UTC**, never presented as current prices. Quotes and the latest candle agree across sample intervals. Unknown tickers are not silently invented.
+Use `FINANCEBRO_DATA_MODE=demo` for an offline preview. The default is `live`; provider failure first returns stale live cache with its original timestamp and a warning, then falls back to deterministic, clearly labeled synthetic samples when no live cache exists. Samples are fixed at **2026-09-29 20:00 UTC**, never presented as current prices. Quotes and the latest candle agree across sample intervals. Unknown tickers are not silently invented.
 
-`ATLAS_CACHE_PATH` overrides `backend/data/atlas.sqlite3`. `ATLAS_PROVIDER_TIMEOUT` controls the request deadline in seconds (default 8). Quotes expire after 30 seconds, intraday charts after 60 seconds, and daily/weekly charts after 300 seconds. A mode/provider/symbol/timeframe key isolates datasets. Request locks share simultaneous loads; a six-worker executor bounds outstanding provider work. A timed-out yfinance request can finish in the background because its library calls cannot be forcibly cancelled. Coinbase HTTP requests also have a transport timeout.
+`FINANCEBRO_CACHE_PATH` overrides `backend/data/atlas.sqlite3`. `FINANCEBRO_PROVIDER_TIMEOUT` controls the request deadline in seconds (default 8). Quotes expire after 30 seconds, intraday charts after 60 seconds, and daily/weekly charts after 300 seconds. A mode/provider/symbol/timeframe key isolates datasets. Request locks share simultaneous loads; a six-worker executor bounds outstanding provider work. A timed-out yfinance request can finish in the background because its library calls cannot be forcibly cancelled. Coinbase HTTP requests also have a transport timeout.
 
 ## API
 
@@ -55,3 +55,5 @@ Future alternative datasets such as Polymarket, Deribit, order-book data, and ma
 Tests cover snapshot isolation from history requests, persistent caching, simultaneous request deduplication, stale and synthetic fallback, demo mode isolation, supported intervals, broad symbol metadata, deadline handling, provider candle parsing, and research output.
 
 Provider implementation references: [yfinance API](https://ranaroussi.github.io/yfinance/reference/api/yfinance.Ticker.html), [yfinance search](https://ranaroussi.github.io/yfinance/reference/yfinance.search.html), [Coinbase candles](https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-candles), [Coinbase ticker](https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-ticker), and [Coinbase stats](https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-stats).
+
+The default SQLite filename is kept for cache continuity. `ATLAS_DATA_MODE`, `ATLAS_CACHE_PATH` and `ATLAS_PROVIDER_TIMEOUT` remain supported aliases; the corresponding `FINANCEBRO_*` setting takes precedence.

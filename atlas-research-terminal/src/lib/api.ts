@@ -1,4 +1,5 @@
 import type { Asset, HistoryResponse, Quote, Timeframe } from "./types";
+import type { AnalystTargetsResponse } from "./analysts";
 
 const historyCache = new Map<
   string,
@@ -44,6 +45,11 @@ export const api = {
       signal,
     ),
   models: (signal?: AbortSignal) => request<unknown>("/models", signal),
+  analystTargets: (symbol: string, signal?: AbortSignal, refresh = false) =>
+    request<AnalystTargetsResponse>(
+      `/analyst-targets/${encodeURIComponent(symbol)}${refresh ? "?refresh=true" : ""}`,
+      signal,
+    ),
   async history(
     symbol: string,
     timeframe: Timeframe,

@@ -16,7 +16,7 @@ class CoinbaseProvider:
 
     def __init__(self, timeout: float = 8, client: httpx.Client | None = None):
         self.client = client or httpx.Client(base_url="https://api.exchange.coinbase.com", timeout=timeout,
-                                            headers={"User-Agent": "AtlasLocalResearch/1.0", "Accept": "application/json"})
+                                            headers={"User-Agent": "FinanceBroLocalResearch/1.0", "Accept": "application/json"})
         self._products: tuple[float, list[dict]] | None = None
         self._lock = threading.Lock()
 

@@ -23,7 +23,7 @@ function portAvailable(port) {
       reject(
         new Error(
           error.code === "EADDRINUSE"
-            ? `Port ${port} is already in use. Stop the other process before starting Atlas.`
+            ? `Port ${port} is already in use. Stop the other process before starting FinanceBro.`
             : `Cannot listen on 127.0.0.1:${port}: ${error.message}`,
         ),
       );
@@ -68,7 +68,7 @@ function launch(label, command, args) {
   child.once("exit", (code, signal) => {
     if (!stopping) {
       console.error(
-        `${label} stopped ${signal ? `with ${signal}` : `with exit code ${code}`}. Stopping Atlas.`,
+        `${label} stopped ${signal ? `with ${signal}` : `with exit code ${code}`}. Stopping FinanceBro.`,
       );
       stop(code || 1);
     }
@@ -90,10 +90,7 @@ process.on("exit", () => {
 });
 
 try {
-  if (
-    !existsSync(venvPython) ||
-    !existsSync(viteEntrypoint)
-  ) {
+  if (!existsSync(venvPython) || !existsSync(viteEntrypoint)) {
     throw new Error("Local dependencies are missing. Run npm run setup first.");
   }
   const check = spawnSync(
@@ -108,7 +105,7 @@ try {
   }
   await Promise.all([portAvailable(8000), portAvailable(5173)]);
   console.log(
-    `\nAtlas — ${process.env.ATLAS_DATA_MODE === "demo" ? "sample data" : "live providers with labeled fallback"}`,
+    `\nFinanceBro — ${(process.env.FINANCEBRO_DATA_MODE || process.env.ATLAS_DATA_MODE) === "demo" ? "sample data" : "live providers with labeled fallback"}`,
   );
   console.log("Terminal: http://127.0.0.1:5173");
   console.log("API docs: http://127.0.0.1:8000/docs");
@@ -134,6 +131,6 @@ try {
     "false",
   ]);
 } catch (error) {
-  console.error(`\nCannot start Atlas: ${error.message}\n`);
+  console.error(`\nCannot start FinanceBro: ${error.message}\n`);
   stop(1);
 }

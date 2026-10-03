@@ -19,6 +19,9 @@ import type {
   Time,
   UTCTimestamp,
 } from "lightweight-charts";
+import { projectIndicatorData } from "../lib/indicatorProjection";
+import { IchimokuCloud } from "./IchimokuCloud";
+import { DiscontinuousLine } from "./DiscontinuousLine";
 import { INDICATOR_DEFINITIONS } from "../lib/indicators";
 import { calculateChartIndicator, isDailyAverage } from "../lib/jordi";
 import type { Bar, IndicatorConfig, Timeframe } from "../lib/types";
@@ -103,14 +106,34 @@ const MarketChart = forwardRef<MarketChartHandle, MarketChartProps>(
     const previousFitKey = useRef(fitKey);
     const needsInitialFit = useRef(true);
     crosshairHandler.current = onCrosshair;
+    const futureOffset = Math.max(
+      0,
+      ...indicators
+        .filter((i) => i.visible && i.kind === "Ichimoku")
+        .map((i) =>
+          Math.min(
+            200,
+            Math.max(1, Math.round(i.parameters.displacement || 26)),
+          ),
+        ),
+    );
 
     useImperativeHandle(
       ref,
       () => ({
         screenshot: () => chart.current?.takeScreenshot() ?? null,
-        fit: () => chart.current?.timeScale().fitContent(),
+        fit: () => {
+          if (futureOffset && bars.length)
+            chart.current
+              ?.timeScale()
+              .setVisibleLogicalRange({
+                from: 0,
+                to: bars.length + futureOffset + 3,
+              });
+          else chart.current?.timeScale().fitContent();
+        },
       }),
-      [],
+      [bars.length, futureOffset],
     );
 
     useLayoutEffect(() => {
@@ -280,20 +303,25 @@ const MarketChart = forwardRef<MarketChartHandle, MarketChartProps>(
         );
         if (!definition) continue;
         const paneIndex = definition.pane === "overlay" ? 0 : nextPane++;
-        for (const output of calculateChartIndicator(
+        const outputs = calculateChartIndicator(
           bars,
           dailyBars,
           timeframe,
           config,
-        )) {
+        );
+        for (const output of outputs) {
+          const cloudSpan =
+            config.kind === "Ichimoku" &&
+            ["span-a", "span-b"].includes(output.key);
           const common = {
             color: output.color,
             title: definition.pane === "overlay" ? "" : output.name,
             priceLineVisible: false,
             lastValueVisible:
-              definition.pane !== "overlay" || isDailyAverage(config),
+              !cloudSpan &&
+              (definition.pane !== "overlay" || isDailyAverage(config)),
           };
-          const data = output.data.map((point) => ({
+          const data = projectIndicatorData(bars, output).map((point) => ({
             ...point,
             time: asTime(point.time),
           }));
@@ -304,7 +332,7 @@ const MarketChart = forwardRef<MarketChartHandle, MarketChartProps>(
               {
                 ...common,
                 priceFormat:
-                  definition.pane === "volume"
+                  definition.format === "volume"
                     ? { type: "volume" }
                     : priceFormatFor(output.data.at(-1)?.value, 3),
               },
@@ -319,12 +347,25 @@ const MarketChart = forwardRef<MarketChartHandle, MarketChartProps>(
                 ...common,
                 lineWidth: isDailyAverage(config) ? 2 : 1,
                 crosshairMarkerRadius: 2,
+                lineVisible: !cloudSpan && !output.gaps,
+                crosshairMarkerVisible: !cloudSpan,
+                // Each up/down Supertrend line must stop at a regime switch.
+                ...(output.gaps ? { pointMarkersVisible: false } : {}),
                 lineStyle: output.dashed ? LineStyle.Dashed : LineStyle.Solid,
-                priceFormat: priceFormatFor(output.data.at(-1)?.value),
-                ...(config.kind === "RSI"
+                priceFormat:
+                  definition.format === "volume"
+                    ? { type: "volume" }
+                    : priceFormatFor(
+                        output.data.at(-1)?.value,
+                        config.kind === "CMF" ? 3 : 2,
+                      ),
+                ...(definition.bounds
                   ? {
                       autoscaleInfoProvider: () => ({
-                        priceRange: { minValue: 0, maxValue: 100 },
+                        priceRange: {
+                          minValue: definition.bounds![0],
+                          maxValue: definition.bounds![1],
+                        },
                       }),
                     }
                   : {}),
@@ -344,6 +385,15 @@ const MarketChart = forwardRef<MarketChartHandle, MarketChartProps>(
               title: reference.label,
             });
           }
+          if (output.gaps)
+            series.attachPrimitive(new DiscontinuousLine(bars, output));
+          if (config.kind === "Ichimoku" && output.key === "conversion") {
+            const first = outputs.find((item) => item.key === "span-a");
+            const second = outputs.find((item) => item.key === "span-b");
+            // Use an undisplaced line as the coordinate anchor, even if all spans lie in future space.
+            if (first && second)
+              series.attachPrimitive(new IchimokuCloud(bars, first, second));
+          }
           indicatorSeries.current.push(series);
         }
         if (paneIndex > 0) {
@@ -352,7 +402,7 @@ const MarketChart = forwardRef<MarketChartHandle, MarketChartProps>(
             .panes()
             [paneIndex].setStretchFactor(
               paneStretchFactors.current.get(config.id) ??
-                (definition.pane === "volume" ? 0.7 : 1.2),
+                (definition.pane === "volume" ? 1.25 : 1.2),
             );
           instance
             .panes()
@@ -376,12 +426,17 @@ const MarketChart = forwardRef<MarketChartHandle, MarketChartProps>(
       if (range === "RECENT") {
         instance.timeScale().setVisibleLogicalRange({
           from: Math.max(0, bars.length - 90),
-          to: bars.length + 3,
+          to: bars.length + futureOffset + 3,
         });
         return;
       }
       if (range === "ALL") {
-        instance.timeScale().fitContent();
+        instance
+          .timeScale()
+          .setVisibleLogicalRange({
+            from: 0,
+            to: bars.length + futureOffset + 3,
+          });
         return;
       }
       const from = Math.max(
@@ -389,12 +444,21 @@ const MarketChart = forwardRef<MarketChartHandle, MarketChartProps>(
         rangeStart(bars[bars.length - 1].time, range),
       );
       const to = bars[bars.length - 1].time;
-      if (from < to)
+      if (futureOffset) {
+        const firstIndex = bars.findIndex((bar) => bar.time >= from);
+        // Range setters paint asynchronously; derive both endpoints directly from real bars.
+        instance
+          .timeScale()
+          .setVisibleLogicalRange({
+            from: Math.max(0, firstIndex),
+            to: bars.length + futureOffset + 3,
+          });
+      } else if (from < to)
         instance
           .timeScale()
           .setVisibleRange({ from: asTime(from), to: asTime(to) });
       else instance.timeScale().fitContent();
-    }, [bars, timeframe, range, fitKey]);
+    }, [bars, timeframe, range, fitKey, futureOffset]);
 
     useLayoutEffect(() => {
       const instance = chart.current;

@@ -14,11 +14,11 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> "Settings":
-        mode = os.getenv("ATLAS_DATA_MODE", "live").strip().lower()
+        mode = os.getenv("FINANCEBRO_DATA_MODE", os.getenv("ATLAS_DATA_MODE", "live")).strip().lower()
         if mode not in {"live", "demo"}:
-            raise ValueError("ATLAS_DATA_MODE must be live or demo")
-        timeout = float(os.getenv("ATLAS_PROVIDER_TIMEOUT", "8"))
+            raise ValueError("FINANCEBRO_DATA_MODE must be live or demo")
+        timeout = float(os.getenv("FINANCEBRO_PROVIDER_TIMEOUT", os.getenv("ATLAS_PROVIDER_TIMEOUT", "8")))
         if not 0.1 <= timeout <= 120:
-            raise ValueError("ATLAS_PROVIDER_TIMEOUT must be between 0.1 and 120 seconds")
-        return cls(mode=mode, cache_path=Path(os.getenv("ATLAS_CACHE_PATH", str(cls.cache_path))),
+            raise ValueError("FINANCEBRO_PROVIDER_TIMEOUT must be between 0.1 and 120 seconds")
+        return cls(mode=mode, cache_path=Path(os.getenv("FINANCEBRO_CACHE_PATH", os.getenv("ATLAS_CACHE_PATH", str(cls.cache_path)))),
                    provider_timeout=timeout)

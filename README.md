@@ -8,8 +8,16 @@ Selected computational research by Viktor Zettel, at the intersection of financi
 | [Gaia Nearby Stars](gaia-nearby-stars/) | What does the nearby stellar volume look like in Sun-centred coordinates? | Gaia DR3 catalogue preparation, methodology, interactive Three.js viewer |
 | [RiskLens](portfolio-optimization/) | How do historical portfolio data and allocation methods shape estimated risk? | React dashboard, FastAPI analysis service, HRP/NCO allocation, volatility, VaR/ES and correlation views |
 | [Solar System Scale Explorer](real-scale-solar-system/) | How can average planetary distances and body sizes be conveyed on a continuous scale? | React/Vite two-dimensional explorer with travel controls, ruler and planet information |
-| [Atlas Research Terminal](atlas-research-terminal/) | How can a local TradingView-style workspace support chart analysis without built-in watchlist or indicator quotas? | React/TypeScript candle charts, FastAPI market-data adapters, configurable indicators, Jordi Visser daily SMA preset, watchlists and breadth scans |
-| [WhaleWatch](whale-watch/) | What do major managers hold in their latest public 13F reports, and how did positions change from the previous quarter? | Standalone React/FastAPI tracker, five managers with portraits, allocation charts, quarterly position changes, filing sources, CSV export and a deadline countdown |
+| [FinanceBro](atlas-research-terminal/) | Your own free, open-source TradingView-style charting page. No subscription, no account, and no built-in indicator or watchlist limits. | 28 indicators, Ichimoku Cloud, Volume, analyst price targets, Jordi Visser preset and custom layouts. Bring your AI coding agent to add your own tools. |
+| [WhaleWatch](whale-watch/) | See what some of the best-known investors hold and how their reported portfolios changed last quarter. | Five managers, headshots, holdings pie charts, additions, trims and exits, CSV export, original filings and a deadline countdown. |
+
+## Two tools to make market research easier
+
+**[FinanceBro](atlas-research-terminal/)** is a completely free, open-source charting page inspired by TradingView. Run it on your own computer and add as many indicators and watchlist names as you want—no paid tiers or app-imposed quotas. Give your AI coding agent the project and [extension guide](atlas-research-terminal/AGENT_GUIDE.md) to build custom indicators, connect data or create a research view. Free data providers still set their own rate limits and available history. The existing folder name is kept so older Atlas links still work.
+
+**[WhaleWatch](whale-watch/)** helps you learn from the big fish. Pick Atreides, Citadel, Duquesne, Berkshire or Pershing Square to see what they reported owning, how much they held, and what grew, shrank or disappeared since the previous quarter. These are quarterly public filings, so they show reported portfolio changes rather than live trades or exact trade dates.
+
+Both projects include their source, local setup instructions and MIT licenses for the project-authored code. Third-party assets retain their own terms and credits.
 
 ## How to read the market research
 

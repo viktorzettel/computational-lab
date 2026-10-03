@@ -36,7 +36,34 @@ export interface HistoryResponse {
   supported_timeframes: Timeframe[];
 }
 export type IndicatorKind =
-  "SMA" | "EMA" | "RSI" | "MACD" | "BB" | "ATR" | "VWAP" | "Volume";
+  | "SMA"
+  | "EMA"
+  | "WMA"
+  | "DEMA"
+  | "TEMA"
+  | "HMA"
+  | "VWMA"
+  | "Ichimoku"
+  | "Donchian"
+  | "Keltner"
+  | "Supertrend"
+  | "RSI"
+  | "MACD"
+  | "Stochastic"
+  | "StochRSI"
+  | "ADX"
+  | "CCI"
+  | "WilliamsR"
+  | "ROC"
+  | "AO"
+  | "BB"
+  | "ATR"
+  | "VWAP"
+  | "Volume"
+  | "OBV"
+  | "MFI"
+  | "CMF"
+  | "ADL";
 export interface IndicatorConfig {
   id: string;
   kind: IndicatorKind;

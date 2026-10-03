@@ -3,6 +3,8 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 from datetime import datetime, timezone, timedelta
+from .analysts import (AnalystSource, AnalystTargetsResponse, PublicAnalystProvider,
+                       SOURCE_LABELS, source_url, supported)
 from .cache import SQLiteCache
 from .catalog import ASSETS, normalize_symbol, search_catalog
 from .config import Settings
@@ -19,14 +21,16 @@ class UnsupportedTimeframe(ValueError):
 
 
 class MarketService:
-    def __init__(self, settings: Settings, registry: ProviderRegistry, cache: SQLiteCache | None = None):
+    def __init__(self, settings: Settings, registry: ProviderRegistry, cache: SQLiteCache | None = None,
+                 analyst_provider: PublicAnalystProvider | None = None):
         self.settings = settings
         self.registry = registry
         self.cache = cache or SQLiteCache(settings.cache_path)
         self.demo = DemoProvider()
+        self.analyst_provider = analyst_provider or PublicAnalystProvider(settings.provider_timeout)
         self._locks: dict[str, asyncio.Lock] = {}
         # Bounds background provider work even when a third-party library ignores cancellation.
-        self._executor = ThreadPoolExecutor(max_workers=6, thread_name_prefix="atlas-provider")
+        self._executor = ThreadPoolExecutor(max_workers=6, thread_name_prefix="financebro-provider")
 
     def _lock(self, key: str) -> asyncio.Lock:
         return self._locks.setdefault(key, asyncio.Lock())
@@ -202,8 +206,60 @@ class MarketService:
         self.cache.set(key, response, 3600 if response.get("available") else 30)
         return response
 
+    async def analyst_targets(self, symbol: str, refresh: bool = False) -> AnalystTargetsResponse:
+        asset = await self.asset(symbol)
+        base = dict(symbol=asset.symbol, company=asset.name, currency=asset.currency)
+        if not supported(asset):
+            return AnalystTargetsResponse(**base, status="unsupported",
+                message="Analyst target coverage currently supports US dollar stock listings. Crypto, indices, ETFs and other currencies are not covered by these sources.")
+        if self.settings.mode == "demo":
+            return AnalystTargetsResponse(**base, status="demo",
+                message="Analyst calls are not generated in sample mode. Use live data mode to retrieve published research.")
+        key = f"analyst-targets:v1:{asset.symbol}"
+        async with self._lock(key):
+            cached = self.cache.get(key)
+            if cached and cached.fresh and not refresh:
+                return AnalystTargetsResponse.model_validate(cached.payload).model_copy(update={"cached": True})
+            results = await asyncio.gather(*[
+                self._call(self.analyst_provider.fetch, source, asset.symbol)
+                for source in SOURCE_LABELS
+            ], return_exceptions=True)
+            sources, records = [], []
+            for source, result in zip(SOURCE_LABELS, results):
+                if isinstance(result, BaseException):
+                    sources.append(AnalystSource(id=source, name=SOURCE_LABELS[source], url=source_url(source, asset.symbol),
+                                                status="unavailable", message=str(result) if isinstance(result, ProviderError) else "This public source could not be read."))
+                    continue
+                # Preserve provenance. Do not merge differently dated calls across sites.
+                unique = {call.id: call for call in result if call.symbol == asset.symbol}
+                records.extend(unique.values())
+                sources.append(AnalystSource(id=source, name=SOURCE_LABELS[source], url=source_url(source, asset.symbol),
+                    status="available" if unique else "empty", count=len(unique),
+                    message="Recent public calls; names and ratings are reported by TipRanks through Stock Analysis." if source == "stockanalysis" else "Public firm-level history; individual analyst names are not supplied."))
+            records.sort(key=lambda call: (call.date, call.analyst is not None), reverse=True)
+            failed = [source for source in sources if source.status == "unavailable"]
+            # Keep the original retrieval date and mark old records when all sources fail.
+            if not records and failed and cached and cached.payload.get("records"):
+                response = AnalystTargetsResponse.model_validate(cached.payload)
+                response.cached = response.stale = True
+                response.warning = "Public sources could not be refreshed. Showing previously retrieved calls; check the retrieval date."
+                response.sources = sources
+                return response
+            status = "available" if records else "unavailable" if failed else "empty"
+            response = AnalystTargetsResponse(**base, status=status, records=records, sources=sources,
+                retrieved_at=int(datetime.now(timezone.utc).timestamp()),
+                warning="Some public sources are unavailable. Showing the calls retrieved from the remaining source." if failed and records else None,
+                message="No public analyst calls were found for this listing." if status == "empty" else "Public analyst sources are temporarily unavailable. Try refreshing or open a source below." if status == "unavailable" else None)
+            # A partial fetch must not erase good cached records from an unavailable source.
+            if failed and cached and cached.payload.get("records"):
+                response.warning = "Some public sources are unavailable. Showing freshly retrieved calls only; the prior complete cache is retained."
+                return response
+            self.cache.set(key, response.model_dump(), 60 if failed else 900)
+            return response
+
     def close(self):
         self._executor.shutdown(wait=False, cancel_futures=True)
+        self.analyst_provider.close()
         for provider in self.registry.providers:
             close = getattr(provider, "close", None)
             if close:

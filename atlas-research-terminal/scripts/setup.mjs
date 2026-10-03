@@ -56,19 +56,21 @@ function run(command, args) {
 try {
   if (Number(process.versions.node.split(".")[0]) < 20) {
     throw new Error(
-      "Atlas requires Node.js 20 or newer. Install a current Node.js LTS release, then run npm run setup again.",
+      "FinanceBro requires Node.js 20 or newer. Install a current Node.js LTS release, then run npm run setup again.",
     );
   }
 
-  console.log("\nAtlas — local environment setup\n");
+  console.log("\nFinanceBro — local environment setup\n");
   if (!existsSync(venvPython)) {
-    const candidates = process.env.ATLAS_PYTHON
-      ? [process.env.ATLAS_PYTHON]
+    const configuredPython =
+      process.env.FINANCEBRO_PYTHON || process.env.ATLAS_PYTHON;
+    const candidates = configuredPython
+      ? [configuredPython]
       : ["python3", "python"];
     const python = candidates.find(supportedPython);
     if (!python) {
       throw new Error(
-        "Python 3.10 or newer is required. Install Python and try again, or set ATLAS_PYTHON to its executable path.",
+        "Python 3.10 or newer is required. Install Python and try again, or set FINANCEBRO_PYTHON to its executable path.",
       );
     }
     console.log(`Creating an isolated Python environment with ${python}…`);
@@ -81,7 +83,7 @@ try {
 
   if (!existsSync(join(root, "backend", "requirements.txt"))) {
     throw new Error(
-      "backend/requirements.txt is missing. Run setup from a complete Atlas checkout.",
+      "backend/requirements.txt is missing. Run setup from a complete FinanceBro checkout.",
     );
   }
   console.log("Installing backend dependencies in .venv…");

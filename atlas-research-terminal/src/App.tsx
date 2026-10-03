@@ -24,6 +24,7 @@ import {
   Settings2,
   SlidersHorizontal,
   Star,
+  Target,
   TrendingUp,
   X,
 } from "lucide-react";
@@ -33,6 +34,7 @@ import SymbolSearch from "./components/SymbolSearch";
 import WatchlistPanel from "./components/WatchlistPanel";
 import IndicatorPicker from "./components/IndicatorPicker";
 import ReturnsPanel from "./components/ReturnsPanel";
+import AnalystTargets from "./components/AnalystTargets";
 import BreadthDialog from "./components/BreadthDialog";
 import { dailyBreadth } from "./lib/breadth";
 import {
@@ -52,7 +54,12 @@ import {
   formatPercent,
   formatPrice,
 } from "./lib/assets";
-import { INDICATOR_DEFINITIONS, calculateIndicator } from "./lib/indicators";
+import {
+  INDICATOR_DEFINITIONS,
+  indicatorParameter,
+  indicatorName,
+  calculateIndicator,
+} from "./lib/indicators";
 import { downloadFile, useLocalState } from "./lib/storage";
 import type {
   Asset,
@@ -125,16 +132,14 @@ const TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "1h", "4h", "1D", "1W"];
 const indicatorLabel = (i: IndicatorConfig) =>
   i.basis === "daily"
     ? `SMA ${i.parameters.period}D`
-    : `${i.kind === "BB" ? "Bollinger Bands" : i.kind}${i.parameters.period ? ` ${i.parameters.period}` : i.kind === "MACD" ? ` ${i.parameters.fast}, ${i.parameters.slow}, ${i.parameters.signal}` : ""}`;
+    : `${indicatorName(i.kind)}${i.parameters.period ? ` ${i.parameters.period}` : i.kind === "MACD" ? ` ${i.parameters.fast}, ${i.parameters.slow}, ${i.parameters.signal}` : ""}`;
 const validIndicators = (v: unknown): v is IndicatorConfig[] =>
   Array.isArray(v) &&
   v.every(
     (i) =>
       i &&
       typeof i.id === "string" &&
-      ["SMA", "EMA", "RSI", "MACD", "BB", "ATR", "VWAP", "Volume"].includes(
-        i.kind,
-      ) &&
+      INDICATOR_DEFINITIONS.some((d) => d.kind === i.kind) &&
       typeof i.color === "string" &&
       typeof i.visible === "boolean" &&
       (i.basis === undefined || (i.basis === "daily" && i.kind === "SMA")) &&
@@ -161,6 +166,7 @@ type Dialog =
   | "search"
   | "add-symbol"
   | "indicators"
+  | "analysts"
   | "create-list"
   | "rename-list"
   | "save-layout"
@@ -422,11 +428,11 @@ function App() {
         "Browser storage is full. Export your watchlists to keep a backup.",
       );
     document.addEventListener("keydown", key);
-    window.addEventListener("atlas-storage-error", storageError);
+    window.addEventListener("financebro-storage-error", storageError);
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => {
       document.removeEventListener("keydown", key);
-      window.removeEventListener("atlas-storage-error", storageError);
+      window.removeEventListener("financebro-storage-error", storageError);
       clearInterval(timer);
     };
   }, [notify]);
@@ -745,7 +751,7 @@ function App() {
           onReorder={reorder}
           onExport={() => {
             downloadFile(
-              "atlas-watchlists.json",
+              "financebro-watchlists.json",
               JSON.stringify(watchlists, null, 2),
               "application/json",
             );
@@ -876,7 +882,7 @@ function App() {
                       onClick={() => setWorkspaceMenu(false)}
                     >
                       <div className="workspace-menu-label">
-                        Atlas workspace
+                        FinanceBro workspace
                       </div>
                       <button onClick={() => openShelf("overview")}>
                         <LayoutDashboard size={16} /> Terminal overview
@@ -946,6 +952,14 @@ function App() {
             >
               <SlidersHorizontal size={15} />
               Indicators<span>{indicators.length}</span>
+            </button>
+            <button
+              className="analyst-targets-button"
+              onClick={() => setDialog("analysts")}
+              title={`Published analyst targets for ${displaySymbol(symbol)}`}
+            >
+              <Target size={16} />
+              <span>Analyst targets</span>
             </button>
             <div className="chart-toolbar-right">
               <button
@@ -1052,8 +1066,10 @@ function App() {
               </div>
               <div className="chart-indicator-legend">
                 {enabledIndicators
-                  .filter((i) =>
-                    ["SMA", "EMA", "BB", "VWAP", "Volume"].includes(i.kind),
+                  .filter(
+                    (i) =>
+                      INDICATOR_DEFINITIONS.find((d) => d.kind === i.kind)
+                        ?.pane === "overlay" || i.kind === "Volume",
                   )
                   .map((i) => (
                     <span className="legend-chip" key={i.id}>
@@ -1427,9 +1443,7 @@ function App() {
                       <strong>
                         {i.basis === "daily"
                           ? indicatorLabel(i)
-                          : i.kind === "BB"
-                            ? "Bollinger Bands"
-                            : i.kind}
+                          : indicatorName(i.kind)}
                       </strong>
                       <button
                         className="icon-button"
@@ -1450,29 +1464,32 @@ function App() {
                       </button>
                     </div>
                     <div className="indicator-parameters">
-                      {Object.entries(i.parameters).map(([key, value]) => (
+                      {Object.entries({
+                        ...INDICATOR_DEFINITIONS.find((d) => d.kind === i.kind)
+                          ?.defaults,
+                        ...i.parameters,
+                      }).map(([key, value]) => (
                         <label key={key}>
-                          {{
-                            period: "Period",
-                            stdDev: "Std. dev.",
-                            fast: "Fast",
-                            slow: "Slow",
-                            signal: "Signal",
-                          }[key] || key}
+                          {indicatorParameter(key).label}
                           <input
                             type="number"
-                            min={key === "stdDev" ? 0.1 : 1}
-                            step={key === "stdDev" ? 0.1 : 1}
+                            min={indicatorParameter(key).min}
+                            max={indicatorParameter(key).max}
+                            step={indicatorParameter(key).step}
                             value={value}
                             aria-label={`${i.kind} ${key}`}
                             onChange={(e) => {
                               const parsed = Number(e.target.value);
-                              if (Number.isFinite(parsed) && parsed > 0)
+                              if (
+                                Number.isFinite(parsed) &&
+                                parsed >= indicatorParameter(key).min &&
+                                parsed <= indicatorParameter(key).max
+                              )
                                 updateIndicator(i.id, {
                                   parameters: {
                                     ...i.parameters,
                                     [key]:
-                                      key === "stdDev"
+                                      indicatorParameter(key).step < 1
                                         ? parsed
                                         : Math.round(parsed),
                                   },
@@ -1481,11 +1498,15 @@ function App() {
                           />
                         </label>
                       ))}
-                      {Object.keys(i.parameters).length === 0 && (
+                      {Object.keys({
+                        ...INDICATOR_DEFINITIONS.find((d) => d.kind === i.kind)
+                          ?.defaults,
+                        ...i.parameters,
+                      }).length === 0 && (
                         <span className="no-params">
                           {i.kind === "VWAP"
                             ? "Resets each UTC session"
-                            : "Raw traded volume"}
+                            : "Uses price and reported volume"}
                         </span>
                       )}
                     </div>
@@ -1564,6 +1585,10 @@ function App() {
           setLookback={setRisingLookback}
           onClose={closeDialog}
         />
+      )}
+
+      {dialog === "analysts" && (
+        <AnalystTargets key={symbol} asset={asset} onClose={closeDialog} />
       )}
 
       {(dialog === "search" || dialog === "add-symbol") && (
@@ -1756,6 +1781,19 @@ function App() {
             </div>
             <span>EXTENSIBLE</span>
           </div>
+          <div className="provider-card">
+            <span className="provider-logo">
+              <Target size={22} />
+            </span>
+            <div>
+              <strong>Stock Analysis & Finviz</strong>
+              <p>Analyst ratings & price targets</p>
+              <small>
+                Recent public calls · Names when supplied · Source links
+              </small>
+            </div>
+            <span className="provider-label">ON DEMAND</span>
+          </div>
           <div className="source-details">
             <h3>How data moves</h3>
             <div>
@@ -1769,6 +1807,10 @@ function App() {
             <div>
               <span>Indicators</span>
               <span>Calculated locally from chart data</span>
+            </div>
+            <div>
+              <span>Analyst targets</span>
+              <span>Requested when opened · Cached for 15 minutes</span>
             </div>
             <div>
               <span>History cache</span>
