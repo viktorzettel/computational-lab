@@ -30,7 +30,6 @@ import type {
   WeightedPosition,
 } from "./types";
 import {
-  COLORS,
   STATUS_LABEL,
   UNIVERSE_LABEL,
   countdown,
@@ -237,7 +236,7 @@ function Donut({
                 strokeDashoffset={-start}
                 transform="rotate(-90 125 125)"
                 className="donut-segment"
-                style={{ opacity: hover && hover !== piece.id ? 0.45 : 1 }}
+                style={{ opacity: hover && hover !== piece.id ? 0.8 : 1 }}
                 role="button"
                 tabIndex={0}
                 aria-label={`${piece.label}, ${percent(piece.weight)}${piece.id === "other" ? "" : ", filter holdings"}`}
@@ -254,7 +253,13 @@ function Donut({
                     onSelect(piece.id === "other" ? null : piece.row);
                   }
                 }}
-              />
+              >
+                <title>
+                  {piece.id === "other"
+                    ? `${piece.label}: ${percent(piece.weight)} of reported value. These are known holdings outside the top ten; all their details are in the table below.`
+                    : `${piece.row.issuer}: ${percent(piece.weight)} of reported value`}
+                </title>
+              </circle>
             );
           })}
         </svg>
@@ -265,7 +270,7 @@ function Donut({
         </div>
       </div>
       <div className="allocation-legend">
-        {pieces.map((piece, i) => (
+        {pieces.map((piece) => (
           <button
             key={piece.id}
             className={`legend-row ${hover === piece.id ? "highlight" : ""}`}
@@ -276,11 +281,11 @@ function Donut({
             onClick={() => onSelect(piece.id === "other" ? null : piece.row)}
             title={
               piece.id === "other"
-                ? "Clear holdings filter"
+                ? `${piece.label}: known holdings outside the top ten. Select to show all holdings in the table.`
                 : `${piece.row.issuer} · filter holdings`
             }
           >
-            <span className="legend-dot" style={{ background: COLORS[i] }} />
+            <span className="legend-dot" style={{ background: piece.color }} />
             <span className="legend-name">{piece.label}</span>
             <span className="number">{percent(piece.weight)}</span>
           </button>
@@ -503,7 +508,8 @@ function PortfolioView({
           </div>
           <Donut rows={rows} onSelect={focusHolding} />
           <div className="panel-foot">
-            Top 10 + the rest. Select a slice to find the holding.
+            Top 10 shown individually. “Other” groups the remaining reported
+            holdings; their details are in the table below.
           </div>
         </section>
         <section className="panel moves-panel">

@@ -12,7 +12,7 @@ export const COLORS = [
   "#e99cd3",
   "#d8ddec",
   "#bc957f",
-  "#394655",
+  "#849ab7",
 ];
 export const STATUS_LABEL = {
   new: "New",
