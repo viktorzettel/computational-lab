@@ -6,6 +6,25 @@ Pick an investor, explore the holdings pie chart, and compare position sizes wit
 
 The tracker shows quarterly public 13F snapshots. It helps you understand changes in reported portfolios; it cannot show live trades, exact trade dates, or everything a fund owns.
 
+**[Open WhaleWatch in your browser](https://whalewatch-viktor.netlify.app/)** — no installation or API key needed.
+
+## Clone it
+
+Anyone can clone the source, run their own copy, and adapt the project-authored MIT-licensed code:
+
+```sh
+git clone https://github.com/viktorzettel/computational-lab.git
+cd computational-lab/whale-watch
+npm run setup
+npm start
+```
+
+## Hosted version
+
+The public app runs on Netlify at <https://whalewatch-viktor.netlify.app/>. The React interface uses the same `/api` routes as the local app. `netlify/functions/api.mjs` provides a JavaScript equivalent of the local Python server, with the same strict value-unit checks, amendment handling, reporting-entity boundaries, and quantity comparisons. It reads the public mirror on demand and uses a site-scoped Netlify Blobs cache. No fixed demo portfolios are substituted. Indexes recheck every 15 minutes; filing data caches for 30 days. Refresh rechecks data, coalesced to once per minute to protect the provider. Failed retrievals preserve the existing cache timestamp and show a stale notice. Netlify hosting usage is subject to the site owner's plan.
+
+To deploy your own copy, use `whale-watch` as the base directory and its `netlify.toml` configuration. Build with `npm run build` and publish `dist`; functions live in `netlify/functions`. For manual deployment after building, use `netlify deploy --dir dist --functions netlify/functions --prod` in this folder with your own Netlify login and site. Keep account credentials out of Git.
+
 ## Run
 
 After installing dependencies (see fresh-checkout setup below), launch from this folder:
@@ -89,6 +108,7 @@ Sources: [SEC 13F FAQ and calendar](https://www.sec.gov/rules-regulations/staff-
 npm run build
 npm test
 npm run test:backend
+npm run test:hosted
 ```
 
 Backend regressions cover SEC deadline rollovers, amendments, Pershing's reporting transition, option/principal separation, value units, malformed payload rejection, quantity comparisons, and stale caching. Frontend tests cover allocation denominators, exited holdings, top-ten aggregation, and countdown behavior. Browser checks cover all five managers, quarter selection, Citadel pagination/search, keyboard slice filtering, expanded details, exits, and the mobile layout.
